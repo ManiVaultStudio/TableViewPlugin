@@ -30,8 +30,8 @@ void TableViewPlugin::init()
 {
     auto layout = new QVBoxLayout();
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(_currentDatasetNameLabel);
     layout->addWidget(_tableView);
+    layout->addWidget(_currentDatasetNameLabel);
     getWidget().setLayout(layout);
 
     _dropWidget = new DropWidget(_currentDatasetNameLabel);
@@ -60,12 +60,25 @@ void TableViewPlugin::init()
             auto candidateDataset = mv::data().getDataset<Points>(datasetId);
             if (dataType == PointType) {
                 const auto description = QString("Load %1 into table view").arg(datasetGuiName);
-                if (_points == candidateDataset) {
+                // Add debug output to trace dataset assignment and comparison
+                qDebug() << "[DropWidget] _points.isValid():" << _points.isValid();
+                qDebug() << "[DropWidget] candidateDataset.isValid():" << candidateDataset.isValid();
+                qDebug() << "[DropWidget] _points == candidateDataset:" << (_points == candidateDataset);
+
+                if (_points.isValid() && _points == candidateDataset) {
                     dropRegions << new DropWidget::DropRegion(this, "Warning", "Data already loaded", "exclamation-circle", false);
                 } else {
                     dropRegions << new DropWidget::DropRegion(this, "Points", description, "map-marker-alt", true, [this, candidateDataset]() {
+                        qDebug() << "[DropWidget] Assigning new dataset to _points";
                         _points = candidateDataset;
+                        qDebug() << "[DropWidget] _points.isValid() after assignment:" << _points.isValid();
                         modifyandSetPointData();
+                        // Update label immediately after drop
+                        if (_points.isValid()) {
+                            auto newDatasetName = _points->getGuiName();
+                            _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
+                            _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
+                        }
                     });
                 }
             }
@@ -97,6 +110,7 @@ void TableViewPlugin::setShowBarsForNumericalColumns(bool enabled)
 
 void TableViewPlugin::modifyandSetPointData()
 {
+    qDebug() << "[modifyandSetPointData] _points.isValid():" << _points.isValid();
     if (_points.isValid()) {
         int numOfDims = _points->getNumDimensions();
         int numOfRows = _points->getNumPoints();
@@ -110,8 +124,9 @@ void TableViewPlugin::modifyandSetPointData()
 
         FastTableData fastData = createTableFromDatasetData(xData, numOfRows, columnNames);
         _tableView->setData(fastData);
-        qDebug() << "Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
+        qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
     } else {
+        qDebug() << "[modifyandSetPointData] No valid points dataset, clearing table.";
         _tableView->setData(FastTableData());
     }
 }

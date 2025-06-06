@@ -1,4 +1,7 @@
 #include "TableViewPlugin.h"
+#include "HighPerfTableView.h"
+#include "FastTableData.h"
+#include "TableDataUtils.h" 
 
 #include <event/Event.h>
 
@@ -10,13 +13,15 @@
 Q_PLUGIN_METADATA(IID "studio.manivault.TableViewPlugin")
 
 using namespace mv;
+using namespace mv::gui;
 
 TableViewPlugin::TableViewPlugin(const PluginFactory* factory) :
     ViewPlugin(factory),
     _dropWidget(nullptr),
     _points(),
     _currentDatasetName(),
-    _currentDatasetNameLabel(new QLabel())
+    _currentDatasetNameLabel(new QLabel()),
+    _tableView(new HighPerfTableView())
 {
     // This line is mandatory if drag and drop behavior is required
     _currentDatasetNameLabel->setAcceptDrops(true);
@@ -36,6 +41,9 @@ void TableViewPlugin::init()
 
     layout->addWidget(_currentDatasetNameLabel);
 
+    // Add the high performance table view to the layout
+    layout->addWidget(_tableView);
+
     // Apply the layout
     getWidget().setLayout(layout);
 
@@ -53,10 +61,17 @@ void TableViewPlugin::init()
         const auto datasetsMimeData = dynamic_cast<const DatasetsMimeData*>(mimeData);
 
         if (datasetsMimeData == nullptr)
+        {
+            qDebug() << "TableViewPlugin::init: DatasetsMimeData is null, returning empty drop regions.";
             return dropRegions;
+        }
+            
 
         if (datasetsMimeData->getDatasets().count() > 1)
+        {
+            qDebug() << "TableViewPlugin::init: More than one dataset provided, returning empty drop regions.";
             return dropRegions;
+        }
 
         // Gather information to generate appropriate drop regions
         const auto dataset = datasetsMimeData->getDatasets().first();
@@ -88,6 +103,8 @@ void TableViewPlugin::init()
                     // Dataset can be dropped
                     dropRegions << new DropWidget::DropRegion(this, "Points", description, "map-marker-alt", true, [this, candidateDataset]() {
                         _points = candidateDataset;
+                        // Set the dataset in the high performance table view
+                        modifyandSetPointData();
                     });
                 }
             }
@@ -106,6 +123,8 @@ void TableViewPlugin::init()
 
         // Only show the drop indicator when nothing is loaded in the dataset reference
         _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
+
+        modifyandSetPointData();
     });
 
     // Alternatively, classes which derive from hdsp::EventListener (all plugins do) can also respond to events
@@ -115,6 +134,40 @@ void TableViewPlugin::init()
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
     _eventListener.registerDataEventByType(PointType, std::bind(&TableViewPlugin::onDataEvent, this, std::placeholders::_1));
 
+    // Example: enable bars for all numerical columns by default
+    _tableView->setBarDelegateForNumericalColumns(true);
+}
+
+void TableViewPlugin::setShowBarsForNumericalColumns(bool enabled)
+{
+    if (_tableView)
+        _tableView->setBarDelegateForNumericalColumns(enabled);
+}
+
+void TableViewPlugin::modifyandSetPointData()
+{
+    if (_points.isValid()) {
+
+        
+        int numOfDims = _points->getNumDimensions();
+        int numOfRows = _points->getNumPoints();
+        std::vector<QString> columnNames = _points->getDimensionNames();
+        std::vector<int> columnIndices;
+        for (int i = 0; i < numOfDims; ++i) {
+            columnIndices.push_back(i);
+        }
+        std::vector<float> xData(numOfRows* numOfDims);
+        _points->populateDataForDimensions(xData, columnIndices);
+
+
+
+        FastTableData fastData = createTableFromDatasetData(xData, numOfRows, columnNames);
+        _tableView->setData(fastData);
+        qDebug() << "Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
+    }
+    else {
+        _tableView->setData(FastTableData());
+    }
 }
 
 void TableViewPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
@@ -209,7 +262,6 @@ mv::DataTypes TableViewPluginFactory::supportedDataTypes() const
 
     // This table analysis plugin is compatible with points datasets
     supportedTypes.append(PointType);
-
     return supportedTypes;
 }
 
@@ -223,7 +275,8 @@ mv::gui::PluginTriggerActions TableViewPluginFactory::getPluginTriggerActions(co
 
     const auto numberOfDatasets = datasets.count();
 
-    if (numberOfDatasets >= 1 && PluginFactory::areAllDatasetsOfTheSameType(datasets, PointType)) {
+    if (numberOfDatasets == 1) 
+    {
         auto pluginTriggerAction = new PluginTriggerAction(const_cast<TableViewPluginFactory*>(this), this, "Table", "View table data", icon(), [this, getPluginInstance, datasets](PluginTriggerAction& pluginTriggerAction) -> void {
             for (auto dataset : datasets)
                 getPluginInstance();

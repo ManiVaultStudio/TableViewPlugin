@@ -35,6 +35,18 @@ find_package(ManiVault COMPONENTS Core PointData ClusterData CONFIG QUIET)
 set(PLUGIN_SOURCES
     src/TableViewPlugin.h
     src/TableViewPlugin.cpp
+    src/CorrelationBarDelegate.cpp
+    src/CorrelationBarDelegate.h
+    src/HighPerfTableView.cpp
+    src/HighPerfTableView.h
+    src/HighPerfTableModel.cpp
+    src/HighPerfTableModel.h
+    src/FastTableData.cpp
+    src/FastTableData.h
+	src/TableDataUtils.cpp
+	src/TableDataUtils.h
+    src/SettingsAction.cpp
+    src/SettingsAction.h
     PluginInfo.json
 )
 

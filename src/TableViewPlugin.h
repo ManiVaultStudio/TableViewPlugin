@@ -6,8 +6,11 @@
 #include <widgets/DropWidget.h>
 
 #include <PointData/PointData.h>
-
+#include <ClusterData/ClusterData.h>
 #include <QWidget>
+#include "HighPerfTableView.h"
+#include "FastTableData.h"
+#include "SettingsAction.h"
 
 /** All plugin related classes are in the ManiVault plugin namespace */
 using namespace mv::plugin;
@@ -20,20 +23,6 @@ using namespace mv::util;
 
 class QLabel;
 
-/**
- * Table view plugin class
- *
- * This view plugin class provides skeleton code that shows how to develop
- * a view plugin in ManiVault. It shows how to use the built-in drag and drop
- * behavior.
- *
- * To see the plugin in action, please follow the steps below:
- *
- * 1. Go to the visualization menu in ManiVault
- * 2. Choose the Table view menu item, the view will be added to the layout
- *
- * @authors J. Thijssen & T. Kroes
- */
 class TableViewPlugin : public ViewPlugin
 {
     Q_OBJECT
@@ -58,11 +47,18 @@ public:
      */
     void onDataEvent(mv::DatasetEvent* dataEvent);
 
+    /**
+     * Enable or disable bar rendering for numerical columns
+     * @param enabled True to enable, false to disable
+     */
+    void setShowBarsForNumericalColumns(bool enabled);
+    void modifyandSetPointData();
 protected:
     DropWidget*             _dropWidget;                /** Widget for drag and drop behavior */
-    mv::Dataset<Points>     _points;                    /** Points smart pointer */
+    mv::Dataset<Points>     _points;                 /** Points smart pointer */
     QString                 _currentDatasetName;        /** Name of the current dataset */
     QLabel*                 _currentDatasetNameLabel;   /** Label that show the current dataset name */
+    HighPerfTableView*      _tableView = nullptr;       /** High-performance table view for large datasets */
 };
 
 /**

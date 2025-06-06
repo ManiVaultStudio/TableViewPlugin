@@ -23,6 +23,24 @@ TableViewPlugin::TableViewPlugin(const PluginFactory* factory) :
 {
     _currentDatasetNameLabel->setAcceptDrops(true);
     _currentDatasetNameLabel->setAlignment(Qt::AlignCenter);
+
+    _currentDatasetNameLabel->setMinimumHeight(40); 
+    _currentDatasetNameLabel->setWordWrap(true);
+    _currentDatasetNameLabel->setStyleSheet(
+        "QLabel {"
+        "  border: 1.5px dashed #6c6cff;"
+        "  background: #f5f7ff;"
+        "  border-radius: 8px;"
+        "  color: #333;"
+        "  font-style: italic;"
+        "  padding: 4px 8px;"
+        "  font-size: 13px;"
+        "}"
+        "QLabel:disabled {"
+        "  color: #aaa;"
+        "}"
+    );
+
     getLearningCenterAction().addVideos(QStringList({ "Practitioner", "Developer" }));
 }
 
@@ -35,8 +53,19 @@ void TableViewPlugin::init()
     getWidget().setLayout(layout);
 
     _dropWidget = new DropWidget(_currentDatasetNameLabel);
-    _dropWidget->setDropIndicatorWidget(new DropWidget::DropIndicatorWidget(
-        &getWidget(), "No data loaded", "Drag an item from the data hierarchy and drop it here to visualize data..."));
+
+    auto* dropIndicator = new DropWidget::DropIndicatorWidget(
+        &getWidget(), "No data loaded", "Drag an item from the data hierarchy and drop it here to visualize data...");
+    dropIndicator->setMinimumHeight(64);
+    dropIndicator->setStyleSheet(
+        "QWidget {"
+        "  padding: 14px 12px 20px 12px;"
+        "  font-size: 13px;"
+        "  color: #333;"
+        "  background: transparent;"
+        "}"
+    );
+    _dropWidget->setDropIndicatorWidget(dropIndicator);
 
     _dropWidget->initialize([this](const QMimeData* mimeData) -> DropWidget::DropRegions {
         DropWidget::DropRegions dropRegions;
@@ -60,20 +89,26 @@ void TableViewPlugin::init()
             auto candidateDataset = mv::data().getDataset<Points>(datasetId);
             if (dataType == PointType) {
                 const auto description = QString("Load %1 into table view").arg(datasetGuiName);
-                // Add debug output to trace dataset assignment and comparison
-                qDebug() << "[DropWidget] _points.isValid():" << _points.isValid();
-                qDebug() << "[DropWidget] candidateDataset.isValid():" << candidateDataset.isValid();
-                qDebug() << "[DropWidget] _points == candidateDataset:" << (_points == candidateDataset);
 
-                if (_points.isValid() && _points == candidateDataset) {
-                    dropRegions << new DropWidget::DropRegion(this, "Warning", "Data already loaded", "exclamation-circle", false);
-                } else {
+               
+                if (_points.isValid() && candidateDataset.isValid() && _points == candidateDataset) {
+                    qDebug() << "[DropWidget] Same dataset detected, drop not allowed.";
+                    
+                    dropRegions << new DropWidget::DropRegion(
+                        this,
+                        "Drop not allowed",
+                        "This dataset is already loaded.",
+                        "exclamation-circle",
+                        false 
+                    );
+                }
+                else {
                     dropRegions << new DropWidget::DropRegion(this, "Points", description, "map-marker-alt", true, [this, candidateDataset]() {
                         qDebug() << "[DropWidget] Assigning new dataset to _points";
                         _points = candidateDataset;
                         qDebug() << "[DropWidget] _points.isValid() after assignment:" << _points.isValid();
                         modifyandSetPointData();
-                        // Update label immediately after drop
+
                         if (_points.isValid()) {
                             auto newDatasetName = _points->getGuiName();
                             _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
@@ -196,7 +231,7 @@ mv::DataTypes TableViewPluginFactory::supportedDataTypes() const
 mv::gui::PluginTriggerActions TableViewPluginFactory::getPluginTriggerActions(const mv::Datasets& datasets) const
 {
     PluginTriggerActions pluginTriggerActions;
-
+    /*
     const auto getPluginInstance = [this]() -> TableViewPlugin* {
         return dynamic_cast<TableViewPlugin*>(plugins().requestViewPlugin(getKind()));
     };
@@ -212,6 +247,6 @@ mv::gui::PluginTriggerActions TableViewPluginFactory::getPluginTriggerActions(co
 
         pluginTriggerActions << pluginTriggerAction;
     }
-
+    */
     return pluginTriggerActions;
 }

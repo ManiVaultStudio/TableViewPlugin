@@ -10,7 +10,6 @@
 #include "FastTableData.h"
 #include "SettingsAction.h"
 
-// Plugin related classes
 using namespace mv::plugin;
 using namespace mv::gui;
 using namespace mv::util;

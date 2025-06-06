@@ -205,6 +205,36 @@ void FastTableData::fetchMoreColsRight(int n) {
     // TODO: Implement logic based on your data source
 }
 
+void FastTableData::addColumn(const QString& name, const Value& defaultValue) {
+    // Add column name and metadata
+    _colNames.push_back(name);
+    _colIsNumeric.push_back(std::holds_alternative<double>(defaultValue) || std::holds_alternative<int>(defaultValue));
+    _colMinMax.emplace_back(0.0, 0.0); // Optionally compute min/max later
+    _cols += 1;
+    // Add default value for each row
+    for (int row = 0; row < _rows; ++row) {
+        _data.insert(_data.begin() + row * _cols + (_cols - 1), defaultValue);
+    }
+}
+
+bool FastTableData::removeColumn(const QString& name) {
+    auto it = std::find(_colNames.begin(), _colNames.end(), name);
+    if (it == _colNames.end())
+        return false;
+    int col = std::distance(_colNames.begin(), it);
+    // Remove data for this column in each row
+    for (int row = _rows - 1; row >= 0; --row) {
+        _data.erase(_data.begin() + row * _cols + col);
+    }
+    _colNames.erase(_colNames.begin() + col);
+    _colIsNumeric.erase(_colIsNumeric.begin() + col);
+    _colMinMax.erase(_colMinMax.begin() + col);
+    if (_primaryKeyCol == col) _primaryKeyCol = -1;
+    else if (_primaryKeyCol > col) _primaryKeyCol--;
+    _cols -= 1;
+    return true;
+}
+
 // Removed FastTableData::fromVariantMap implementation. Use createTableFromVariantMap in TableDataUtils instead.
 
 // See TableDataUtils.cpp for table creation from QVariantMap.

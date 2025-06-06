@@ -171,3 +171,16 @@ void HighPerfTableModel::requestMoreColsRight(int n)
         endInsertColumns();
     }
 }
+
+void HighPerfTableModel::addColumn(const QString& name, const FastTableData::Value& defaultValue) {
+    beginResetModel();
+    _data.addColumn(name, defaultValue);
+    endResetModel();
+}
+
+bool HighPerfTableModel::removeColumn(const QString& name) {
+    beginResetModel();
+    bool result = _data.removeColumn(name);
+    endResetModel();
+    return result;
+}

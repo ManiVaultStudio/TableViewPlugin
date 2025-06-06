@@ -298,3 +298,19 @@ void HighPerfTableView::handleHorizontalScroll()
         _model->requestMoreColsRight(_lazyLoadThresholdCols);
     }
 }
+
+void HighPerfTableView::addColumn(const QString& name, const FastTableData::Value& defaultValue) {
+    if (_model) {
+        _model->addColumn(name, defaultValue);
+        // Optionally update delegates or view here if needed
+    }
+}
+
+bool HighPerfTableView::removeColumn(const QString& name) {
+    if (_model) {
+        bool result = _model->removeColumn(name);
+        // Optionally update delegates or view here if needed
+        return result;
+    }
+    return false;
+}

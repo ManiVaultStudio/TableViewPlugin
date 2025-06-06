@@ -43,6 +43,10 @@ public:
     // Export the whole table to a file (CSV or other formats)
     bool exportToFile(QWidget* parent = nullptr, const QString& filePath = QString(), const QString& format = "csv");
 
+    // --- Add/Remove columns by name ---
+    void addColumn(const QString& name, const FastTableData::Value& defaultValue = FastTableData::Value{});
+    bool removeColumn(const QString& name);
+
 signals:
     // Emits a list of lists, each inner list contains the first column value and, if different, the primary key value for each selected row.
     void selectionChangedWithValues(const QList<QVariantList>& selectedValues);

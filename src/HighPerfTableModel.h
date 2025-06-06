@@ -37,6 +37,10 @@ public:
     void requestMoreColsLeft(int n);
     void requestMoreColsRight(int n);
 
+    // --- Add/Remove columns by name ---
+    void addColumn(const QString& name, const FastTableData::Value& defaultValue = FastTableData::Value{});
+    bool removeColumn(const QString& name);
+
 private:
     FastTableData _data;
     bool _showBars = false;

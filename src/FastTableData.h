@@ -94,6 +94,12 @@ public:
     void fetchMoreColsLeft(int n);
     void fetchMoreColsRight(int n);
 
+    // --- Add/Remove columns by name ---
+    // Adds a new column with the given name and optional default value for all rows.
+    void addColumn(const QString& name, const Value& defaultValue = Value{});
+    // Removes the column with the given name. Returns true if removed, false if not found.
+    bool removeColumn(const QString& name);
+
 private:
     int _rows = 0, _cols = 0;
     std::vector<Value> _data;

@@ -6,5 +6,5 @@
 #include "FastTableData.h"
 #include "HighPerfTableModel.h"
 #include <QStringList>
-#include "HighPerfTableView.h" // If mv::Points is defined elsewhere, include its header
-#include "TableDataUtils.h" // Add this include
+#include "HighPerfTableView.h"
+#include "TableDataUtils.h"

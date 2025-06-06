@@ -23,7 +23,6 @@ QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
     if (!index.isValid())
         return QVariant();
 
-    // Bar mode: provide bar value for delegate, but always provide DisplayRole for sorting/copy/export
     if (_showBars && role == Qt::UserRole + 1 && isNumericalColumn(index.column())) {
         const auto& v = _data.get(index.row(), index.column());
         if (std::holds_alternative<double>(v))
@@ -42,7 +41,6 @@ QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
             return std::get<QString>(v);
         return {};
     }
-    // When showing bars, also provide DisplayRole for sorting and clipboard
     if (_showBars && role == Qt::DisplayRole) {
         const auto& v = _data.get(index.row(), index.column());
         if (std::holds_alternative<double>(v))
@@ -53,7 +51,6 @@ QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
             return std::get<QString>(v);
         return {};
     }
-    // Provide row bar color for delegate
     if (role == Qt::BackgroundRole) {
         return _data.rowBarColor(index.row());
     }
@@ -83,7 +80,6 @@ void HighPerfTableModel::getColumnMinMax(int col, float& minVal, float& maxVal) 
 void HighPerfTableModel::setShowBars(bool show) {
     if (_showBars != show) {
         _showBars = show;
-        // Optionally emit dataChanged if needed
     }
 }
 
@@ -98,7 +94,7 @@ int HighPerfTableModel::primaryKeyColumn() const {
 void HighPerfTableModel::sort(int column, Qt::SortOrder order) {
     if (column < 0 || column >= _data.colCount())
         return;
-    // Sort rows based on the value in the given column
+
     std::vector<int> rowIndices(_data.rowCount());
     std::iota(rowIndices.begin(), rowIndices.end(), 0);
 
@@ -120,7 +116,6 @@ void HighPerfTableModel::sort(int column, Qt::SortOrder order) {
     else
         std::stable_sort(rowIndices.begin(), rowIndices.end(), [&](int a, int b) { return valueLess(b, a); });
 
-    // Reorder the data
     FastTableData newData = _data;
     for (int r = 0; r < _data.rowCount(); ++r) {
         for (int c = 0; c < _data.colCount(); ++c) {
@@ -133,7 +128,6 @@ void HighPerfTableModel::sort(int column, Qt::SortOrder order) {
     endResetModel();
 }
 
-// Lazy loading API implementations
 void HighPerfTableModel::requestMoreRowsTop(int n)
 {
     if (_data.canFetchMoreRowsTop(n)) {

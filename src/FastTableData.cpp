@@ -113,7 +113,6 @@ std::vector<std::vector<FastTableData::Value>> FastTableData::getColumns() const
     return result;
 }
 
-// --- Bar color support ---
 void FastTableData::setRowBarColor(int row, const QColor& color) {
     if (row >= 0 && row < _rows) _rowBarColors[row] = color;
 }
@@ -131,9 +130,7 @@ void FastTableData::setAllRowBarColors(const std::vector<QColor>& colors) {
 const std::vector<QColor>& FastTableData::getAllRowBarColors() const {
     return _rowBarColors;
 }
-// --- end bar color support ---
 
-// Filtering support
 void FastTableData::setRowVisible(int row, bool visible) {
     if (row >= 0 && row < _rows) _rowVisible[row] = visible;
 }
@@ -147,7 +144,6 @@ void FastTableData::clearRowFilter() {
     std::fill(_rowVisible.begin(), _rowVisible.end(), true);
 }
 
-// Utility
 void FastTableData::clear() {
     _rows = 0;
     _cols = 0;
@@ -160,58 +156,39 @@ void FastTableData::clear() {
     _primaryKeyCol = -1;
 }
 
-// Lazy loading API stubs (implement as needed for your data source)
 bool FastTableData::canFetchMoreRowsTop(int n) const {
-    // Return true if there are more rows available above current data
-    // TODO: Implement logic based on your data source
     return false;
 }
 
 bool FastTableData::canFetchMoreRowsBottom(int n) const {
-    // Return true if there are more rows available below current data
-    // TODO: Implement logic based on your data source
     return false;
 }
 
 bool FastTableData::canFetchMoreColsLeft(int n) const {
-    // Return true if there are more columns available to the left
-    // TODO: Implement logic based on your data source
     return false;
 }
 
 bool FastTableData::canFetchMoreColsRight(int n) const {
-    // Return true if there are more columns available to the right
-    // TODO: Implement logic based on your data source
     return false;
 }
 
 void FastTableData::fetchMoreRowsTop(int n) {
-    // Fetch and prepend n rows to the top of the data
-    // TODO: Implement logic based on your data source
 }
 
 void FastTableData::fetchMoreRowsBottom(int n) {
-    // Fetch and append n rows to the bottom of the data
-    // TODO: Implement logic based on your data source
 }
 
 void FastTableData::fetchMoreColsLeft(int n) {
-    // Fetch and prepend n columns to the left of the data
-    // TODO: Implement logic based on your data source
 }
 
 void FastTableData::fetchMoreColsRight(int n) {
-    // Fetch and append n columns to the right of the data
-    // TODO: Implement logic based on your data source
 }
 
 void FastTableData::addColumn(const QString& name, const Value& defaultValue) {
-    // Add column name and metadata
     _colNames.push_back(name);
     _colIsNumeric.push_back(std::holds_alternative<double>(defaultValue) || std::holds_alternative<int>(defaultValue));
-    _colMinMax.emplace_back(0.0, 0.0); // Optionally compute min/max later
+    _colMinMax.emplace_back(0.0, 0.0);
     _cols += 1;
-    // Add default value for each row
     for (int row = 0; row < _rows; ++row) {
         _data.insert(_data.begin() + row * _cols + (_cols - 1), defaultValue);
     }
@@ -222,7 +199,6 @@ bool FastTableData::removeColumn(const QString& name) {
     if (it == _colNames.end())
         return false;
     int col = std::distance(_colNames.begin(), it);
-    // Remove data for this column in each row
     for (int row = _rows - 1; row >= 0; --row) {
         _data.erase(_data.begin() + row * _cols + col);
     }
@@ -234,7 +210,3 @@ bool FastTableData::removeColumn(const QString& name) {
     _cols -= 1;
     return true;
 }
-
-// Removed FastTableData::fromVariantMap implementation. Use createTableFromVariantMap in TableDataUtils instead.
-
-// See TableDataUtils.cpp for table creation from QVariantMap.

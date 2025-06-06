@@ -4,9 +4,7 @@
 #include "TableDataUtils.h" 
 
 #include <event/Event.h>
-
 #include <DatasetsMimeData.h>
-
 #include <QDebug>
 #include <QMimeData>
 
@@ -23,118 +21,71 @@ TableViewPlugin::TableViewPlugin(const PluginFactory* factory) :
     _currentDatasetNameLabel(new QLabel()),
     _tableView(new HighPerfTableView())
 {
-    // This line is mandatory if drag and drop behavior is required
     _currentDatasetNameLabel->setAcceptDrops(true);
-
-    // Align text in the center
     _currentDatasetNameLabel->setAlignment(Qt::AlignCenter);
-
     getLearningCenterAction().addVideos(QStringList({ "Practitioner", "Developer" }));
 }
 
 void TableViewPlugin::init()
 {
-    // Create layout
     auto layout = new QVBoxLayout();
-
     layout->setContentsMargins(0, 0, 0, 0);
-
     layout->addWidget(_currentDatasetNameLabel);
-
-    // Add the high performance table view to the layout
     layout->addWidget(_tableView);
-
-    // Apply the layout
     getWidget().setLayout(layout);
 
-    // Instantiate new drop widget
     _dropWidget = new DropWidget(_currentDatasetNameLabel);
+    _dropWidget->setDropIndicatorWidget(new DropWidget::DropIndicatorWidget(
+        &getWidget(), "No data loaded", "Drag an item from the data hierarchy and drop it here to visualize data..."));
 
-    // Set the drop indicator widget (the widget that indicates that the view is eligible for data dropping)
-    _dropWidget->setDropIndicatorWidget(new DropWidget::DropIndicatorWidget(&getWidget(), "No data loaded", "Drag an item from the data hierarchy and drop it here to visualize data..."));
-
-    // Initialize the drop regions
     _dropWidget->initialize([this](const QMimeData* mimeData) -> DropWidget::DropRegions {
-        // A drop widget can contain zero or more drop regions
         DropWidget::DropRegions dropRegions;
-
         const auto datasetsMimeData = dynamic_cast<const DatasetsMimeData*>(mimeData);
 
         if (datasetsMimeData == nullptr)
-        {
-            qDebug() << "TableViewPlugin::init: DatasetsMimeData is null, returning empty drop regions.";
             return dropRegions;
-        }
-            
 
         if (datasetsMimeData->getDatasets().count() > 1)
-        {
-            qDebug() << "TableViewPlugin::init: More than one dataset provided, returning empty drop regions.";
             return dropRegions;
-        }
 
-        // Gather information to generate appropriate drop regions
         const auto dataset = datasetsMimeData->getDatasets().first();
         const auto datasetGuiName = dataset->getGuiName();
         const auto datasetId = dataset->getId();
         const auto dataType = dataset->getDataType();
         const auto dataTypes = DataTypes({ PointType });
 
-        // Visually indicate if the dataset is of the wrong data type and thus cannot be dropped
         if (!dataTypes.contains(dataType)) {
             dropRegions << new DropWidget::DropRegion(this, "Incompatible data", "This type of data is not supported", "exclamation-circle", false);
-        }
-        else {
-
-            // Get points dataset from the core
+        } else {
             auto candidateDataset = mv::data().getDataset<Points>(datasetId);
-
-            // Accept points datasets drag and drop
             if (dataType == PointType) {
                 const auto description = QString("Load %1 into table view").arg(datasetGuiName);
-
                 if (_points == candidateDataset) {
-
-                    // Dataset cannot be dropped because it is already loaded
                     dropRegions << new DropWidget::DropRegion(this, "Warning", "Data already loaded", "exclamation-circle", false);
-                }
-                else {
-
-                    // Dataset can be dropped
+                } else {
                     dropRegions << new DropWidget::DropRegion(this, "Points", description, "map-marker-alt", true, [this, candidateDataset]() {
                         _points = candidateDataset;
-                        // Set the dataset in the high performance table view
                         modifyandSetPointData();
                     });
                 }
             }
         }
-
         return dropRegions;
     });
 
-    // Respond when the name of the dataset in the dataset reference changes
     connect(&_points, &Dataset<Points>::guiNameChanged, this, [this]() {
-
         auto newDatasetName = _points->getGuiName();
-
-        // Update the current dataset name label
         _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
-
-        // Only show the drop indicator when nothing is loaded in the dataset reference
         _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
-
         modifyandSetPointData();
     });
 
-    // Alternatively, classes which derive from hdsp::EventListener (all plugins do) can also respond to events
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetRemoved));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
     _eventListener.registerDataEventByType(PointType, std::bind(&TableViewPlugin::onDataEvent, this, std::placeholders::_1));
 
-    // Example: enable bars for all numerical columns by default
     _tableView->setBarDelegateForNumericalColumns(true);
 }
 
@@ -147,8 +98,6 @@ void TableViewPlugin::setShowBarsForNumericalColumns(bool enabled)
 void TableViewPlugin::modifyandSetPointData()
 {
     if (_points.isValid()) {
-
-        
         int numOfDims = _points->getNumDimensions();
         int numOfRows = _points->getNumPoints();
         std::vector<QString> columnNames = _points->getDimensionNames();
@@ -156,82 +105,48 @@ void TableViewPlugin::modifyandSetPointData()
         for (int i = 0; i < numOfDims; ++i) {
             columnIndices.push_back(i);
         }
-        std::vector<float> xData(numOfRows* numOfDims);
+        std::vector<float> xData(numOfRows * numOfDims);
         _points->populateDataForDimensions(xData, columnIndices);
-
-
 
         FastTableData fastData = createTableFromDatasetData(xData, numOfRows, columnNames);
         _tableView->setData(fastData);
         qDebug() << "Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
-    }
-    else {
+    } else {
         _tableView->setData(FastTableData());
     }
 }
 
 void TableViewPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 {
-    // Get smart pointer to dataset that changed
     const auto changedDataSet = dataEvent->getDataset();
-
-    // Get GUI name of the dataset that changed
     const auto datasetGuiName = changedDataSet->getGuiName();
 
-    // The data event has a type so that we know what type of data event occurred (e.g. data added, changed, removed, renamed, selection changes)
     switch (dataEvent->getType()) {
-
-        // A points dataset was added
         case EventType::DatasetAdded:
         {
-            // Cast the data event to a data added event
             const auto dataAddedEvent = static_cast<DatasetAddedEvent*>(dataEvent);
-
-            // Get the GUI name of the added points dataset and print to the console
             qDebug() << datasetGuiName << "was added";
-
             break;
         }
-
-        // Points dataset data has changed
         case EventType::DatasetDataChanged:
         {
-            // Cast the data event to a data changed event
             const auto dataChangedEvent = static_cast<DatasetDataChangedEvent*>(dataEvent);
-
-            // Get the name of the points dataset of which the data changed and print to the console
             qDebug() << datasetGuiName << "data changed";
-
             break;
         }
-
-        // Points dataset data was removed
         case EventType::DatasetRemoved:
         {
-            // Cast the data event to a data removed event
             const auto dataRemovedEvent = static_cast<DatasetRemovedEvent*>(dataEvent);
-
-            // Get the name of the removed points dataset and print to the console
             qDebug() << datasetGuiName << "was removed";
-
             break;
         }
-
-        // Points dataset selection has changed
         case EventType::DatasetDataSelectionChanged:
         {
-            // Cast the data event to a data selection changed event
             const auto dataSelectionChangedEvent = static_cast<DatasetDataSelectionChangedEvent*>(dataEvent);
-
-            // Get the selection set that changed
             const auto& selectionSet = changedDataSet->getSelection<Points>();
-
-            // Print to the console
             qDebug() << datasetGuiName << "selection has changed";
-
             break;
         }
-
         default:
             break;
     }
@@ -259,8 +174,6 @@ ViewPlugin* TableViewPluginFactory::produce()
 mv::DataTypes TableViewPluginFactory::supportedDataTypes() const
 {
     DataTypes supportedTypes;
-
-    // This table analysis plugin is compatible with points datasets
     supportedTypes.append(PointType);
     return supportedTypes;
 }

@@ -6,7 +6,7 @@
 #include "FastTableData.h"
 #include "HighPerfTableModel.h"
 #include <QStringList>
-#include "HighPerfTableView.h" // If mv::Points is defined elsewhere, include its header
+#include "HighPerfTableView.h"
 #include <limits>
 
 FastTableData createTableFromVariantMap(const QVariantMap& map) {
@@ -27,7 +27,7 @@ FastTableData createTableFromVariantMap(const QVariantMap& map) {
         if (rows == -1)
             rows = list.size();
         else if (list.size() != rows)
-            return FastTableData(); // inconsistent column sizes
+            return FastTableData();
         columns.push_back(list);
     }
 
@@ -73,8 +73,6 @@ FastTableData createTableFromDatasetData(
     const std::vector<std::vector<QString>>& clusterDataset,
     const std::vector<QString>& clusterColumnNames)
 {
-
-    // If neither point nor cluster data is present, return empty
     if ((pointDataset.empty() || pointColumnNames.size() <= 0) && clusterDataset.empty())
         return FastTableData();
     if (numOfRows <= 0)
@@ -90,10 +88,8 @@ FastTableData createTableFromDatasetData(
 
     FastTableData table(numOfRows, totalColumns);
 
-    // Fill point data columns if present
     if (!pointDataset.empty() && pointColumnNames.size() > 0) {
         for (int c = 0; c < pointColumnNames.size(); ++c) {
-            // Use provided point column name if available, otherwise fallback to default
             if (c < static_cast<int>(pointColumnNames.size()) && !pointColumnNames[c].isEmpty()) {
                 table.setColumnName(c, pointColumnNames[c]);
             } else {
@@ -112,11 +108,9 @@ FastTableData createTableFromDatasetData(
         }
     }
 
-    // Fill cluster data columns if present
     if (!clusterDataset.empty() && clusterDataset.size() >= static_cast<size_t>(numOfRows)) {
         for (int c = 0; c < clusterDataColumns; ++c) {
             int colIdx = (pointColumnNames.size() > 0 ? pointColumnNames.size() : 0) + c;
-            // Default cluster column name
             table.setColumnName(colIdx, QString("Cluster %1").arg(c + 1));
             table.setColumnIsNumeric(colIdx, false);
             for (int r = 0; r < numOfRows; ++r) {
@@ -128,13 +122,11 @@ FastTableData createTableFromDatasetData(
         }
     }
 
-    // Set the column names for the cluster data if provided
     for (int c = 0; c < static_cast<int>(clusterColumnNames.size()) && c < clusterDataColumns; ++c) {
         int colIdx = (pointColumnNames.size() > 0 ? pointColumnNames.size() : 0) + c;
         table.setColumnName(colIdx, clusterColumnNames[c]);
     }
 
-    // Ensure the table is valid
     if (table.rowCount() > 0 && table.colCount() > 0)
         return table;
 
@@ -149,10 +141,8 @@ FastTableData createVariantMapFromDatasetData(
     const std::vector<QString>& clusterColumnNames)
 {
     QVariantMap map;
-
     int numOfDims = static_cast<int>(pointColumnNames.size());
 
-    // Add point data as columns using provided pointColumnNames
     if (!pointDataset.empty() && numOfDims > 0 && numOfRows > 0) {
         for (int c = 0; c < numOfDims; ++c) {
             QVariantList col;
@@ -160,7 +150,6 @@ FastTableData createVariantMapFromDatasetData(
             for (int r = 0; r < numOfRows; ++r) {
                 col.append(pointDataset[r * numOfDims + c]);
             }
-            // Use provided point column name if available, otherwise fallback to default
             QString colName = (!pointColumnNames[c].isEmpty())
                 ? pointColumnNames[c]
                 : QString("Dimension %1").arg(c + 1);
@@ -168,7 +157,6 @@ FastTableData createVariantMapFromDatasetData(
         }
     }
 
-    // Add cluster data as columns
     int clusterDataColumns = (!clusterDataset.empty() && !clusterDataset[0].empty()) ? static_cast<int>(clusterDataset[0].size()) : 0;
     for (int c = 0; c < clusterDataColumns; ++c) {
         QVariantList col;

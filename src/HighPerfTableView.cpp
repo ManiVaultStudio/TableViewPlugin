@@ -32,7 +32,6 @@ HighPerfTableView::HighPerfTableView(QWidget* parent)
     setAlternatingRowColors(true);
     _model->setShowBars(true);
 
-    // Connect selection change to custom slot
     if (selectionModel()) {
         connect(selectionModel(), &QItemSelectionModel::selectionChanged,
                 this, &HighPerfTableView::onSelectionChanged);
@@ -58,7 +57,6 @@ void HighPerfTableView::setData(const FastTableData& data) {
 
 void HighPerfTableView::setBarDelegateForNumericalColumns(bool enabled)
 {
-    // Remove all previous delegates
     for (auto it = _barDelegates.begin(); it != _barDelegates.end(); ++it) {
         this->setItemDelegateForColumn(it.key(), nullptr);
         delete it.value();
@@ -68,7 +66,6 @@ void HighPerfTableView::setBarDelegateForNumericalColumns(bool enabled)
     if (!enabled || !_model)
         return;
 
-    // Find numerical columns and set delegate
     for (int col = 0; col < _model->columnCount(); ++col) {
         if (_model->isNumericalColumn(col)) {
             float minVal, maxVal;
@@ -97,7 +94,6 @@ void HighPerfTableView::setBarDelegateForColumn(int column, bool enabled, float 
     }
 }
 
-// Add this function to allow toggling between bar/number mode
 void HighPerfTableView::setBarDelegateDisplayMode(bool showBars)
 {
     _showBars = showBars;
@@ -117,7 +113,7 @@ void HighPerfTableView::setShowBars(bool show)
     if (m) {
         m->setShowBars(show);
         if (m->showBars() == show) {
-            setBarDelegateDisplayMode(show); // update mode for all delegates
+            setBarDelegateDisplayMode(show);
             setBarDelegateForNumericalColumns(show);
             viewport()->update();
         }
@@ -185,13 +181,11 @@ void HighPerfTableView::copySelectedRowsToClipboard(bool asCsv)
 QString HighPerfTableView::serializeRows(const QList<int>& rows, const QString& delimiter) const
 {
     QStringList lines;
-    // Header
     QStringList header;
     for (int c = 0; c < _model->columnCount(); ++c)
         header << _model->headerData(c, Qt::Horizontal, Qt::DisplayRole).toString();
     lines << header.join(delimiter);
 
-    // Rows
     for (int r : rows) {
         QStringList fields;
         for (int c = 0; c < _model->columnCount(); ++c) {
@@ -213,7 +207,6 @@ bool HighPerfTableView::exportToFile(QWidget* parent, const QString& filePath, c
         if (outPath.isEmpty()) return false;
     }
     QString delimiter = (format == "tsv" || outPath.endsWith(".tsv", Qt::CaseInsensitive)) ? "\t" : ",";
-    // Export all rows
     QList<int> allRows;
     for (int r = 0; r < _model->rowCount(); ++r) allRows << r;
     QString text = serializeRows(allRows, delimiter);
@@ -227,7 +220,7 @@ bool HighPerfTableView::exportToFile(QWidget* parent, const QString& filePath, c
     return true;
 }
 
-void HighPerfTableView::onSelectionChanged(const QItemSelection& /*selected*/, const QItemSelection& /*deselected*/)
+void HighPerfTableView::onSelectionChanged(const QItemSelection&, const QItemSelection&)
 {
     auto selModel = selectionModel();
     if (!selModel) return;
@@ -239,9 +232,7 @@ void HighPerfTableView::onSelectionChanged(const QItemSelection& /*selected*/, c
 
     for (const QModelIndex& idx : selRows) {
         QVariantList rowValues;
-        // Always add first column value
         rowValues << _model->data(_model->index(idx.row(), firstCol), Qt::DisplayRole);
-        // If primary key column is valid and not the first, add its value as well
         if (pkCol != -1 && pkCol != firstCol) {
             rowValues << _model->data(_model->index(idx.row(), pkCol), Qt::DisplayRole);
         }
@@ -253,7 +244,7 @@ void HighPerfTableView::onSelectionChanged(const QItemSelection& /*selected*/, c
 void HighPerfTableView::setupLazyLoading()
 {
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this](int) {
-        _lazyLoadTimer.start(50); // debounce
+        _lazyLoadTimer.start(50);
     });
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, this, [this](int) {
         _lazyLoadTimer.start(50);
@@ -272,11 +263,9 @@ void HighPerfTableView::handleVerticalScroll()
     if (firstVisible < 0 || lastVisible < 0) return;
 
     int totalRows = _model->rowCount();
-    // Near top
     if (firstVisible < _lazyLoadThresholdRows) {
         _model->requestMoreRowsTop(_lazyLoadThresholdRows);
     }
-    // Near bottom
     if (lastVisible > totalRows - _lazyLoadThresholdRows) {
         _model->requestMoreRowsBottom(_lazyLoadThresholdRows);
     }
@@ -289,11 +278,9 @@ void HighPerfTableView::handleHorizontalScroll()
     if (firstVisible < 0 || lastVisible < 0) return;
 
     int totalCols = _model->columnCount();
-    // Near left
     if (firstVisible < _lazyLoadThresholdCols) {
         _model->requestMoreColsLeft(_lazyLoadThresholdCols);
     }
-    // Near right
     if (lastVisible > totalCols - _lazyLoadThresholdCols) {
         _model->requestMoreColsRight(_lazyLoadThresholdCols);
     }
@@ -302,14 +289,12 @@ void HighPerfTableView::handleHorizontalScroll()
 void HighPerfTableView::addColumn(const QString& name, const FastTableData::Value& defaultValue) {
     if (_model) {
         _model->addColumn(name, defaultValue);
-        // Optionally update delegates or view here if needed
     }
 }
 
 bool HighPerfTableView::removeColumn(const QString& name) {
     if (_model) {
         bool result = _model->removeColumn(name);
-        // Optionally update delegates or view here if needed
         return result;
     }
     return false;

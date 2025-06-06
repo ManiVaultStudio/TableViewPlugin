@@ -21,23 +21,18 @@ public:
     bool isNumericalColumn(int col) const;
     void getColumnMinMax(int col, float& minVal, float& maxVal) const;
 
-    // Toggle between showing bars and values
     void setShowBars(bool show);
     bool showBars() const;
 
-    // Sorting
     void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
 
-    // Add this method to expose the primary key column index
     int primaryKeyColumn() const;
 
-    // Lazy loading API
     void requestMoreRowsTop(int n);
     void requestMoreRowsBottom(int n);
     void requestMoreColsLeft(int n);
     void requestMoreColsRight(int n);
 
-    // --- Add/Remove columns by name ---
     void addColumn(const QString& name, const FastTableData::Value& defaultValue = FastTableData::Value{});
     bool removeColumn(const QString& name);
 

@@ -5,7 +5,6 @@
 void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
     const QModelIndex& index) const
 {
-    // Only handle numerical cells (UserRole+1)
     if (index.data(Qt::UserRole + 1).isValid()) {
         float value = index.data(Qt::UserRole + 1).toFloat();
 
@@ -36,7 +35,7 @@ void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem
                 return (luminance > 0.5) ? QColor(Qt::black) : QColor(Qt::white);
             };
 
-            QColor barColor = QColor(255, 140, 0); // Default orange
+            QColor barColor = QColor(255, 140, 0);
             const QAbstractItemModel* model = index.model();
             if (model) {
                 QVariant rowColorVar = model->data(model->index(index.row(), 0), Qt::BackgroundRole);
@@ -67,8 +66,6 @@ void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem
                 painter->drawRect(filledRect.normalized());
             }
 
-            // Do NOT draw value text in bar mode
-
             if (option.state & QStyle::State_HasFocus) {
                 QStyleOptionFocusRect focusOption;
                 focusOption.QStyleOption::operator=(option);
@@ -80,7 +77,6 @@ void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem
 
             painter->restore();
         } else {
-            // Number mode: just draw the value as text
             QColor bgColor = (option.state & QStyle::State_Selected)
                 ? option.palette.color(QPalette::Highlight)
                 : option.palette.color(QPalette::Base);
@@ -97,12 +93,10 @@ void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem
         }
     }
     else {
-        // For text cells, just draw as text (default)
         QStyledItemDelegate::paint(painter, option, index);
     }
 }
 
-// Helper: check if two colors are contrastive enough (WCAG 2.0)
 bool CorrelationBarDelegate::isColorContrastive(const QColor& c1, const QColor& c2) const
 {
     auto luminance = [](const QColor& c) {
@@ -115,7 +109,7 @@ bool CorrelationBarDelegate::isColorContrastive(const QColor& c1, const QColor& 
     double l1 = luminance(c1) + 0.05;
     double l2 = luminance(c2) + 0.05;
     double ratio = l1 > l2 ? l1 / l2 : l2 / l1;
-    return ratio > 2.5; // 3:1 is minimum for UI, 4.5:1 for text, 2.5 is a compromise for bars
+    return ratio > 2.5;
 }
 
 bool CorrelationBarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* view,
@@ -123,7 +117,6 @@ bool CorrelationBarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* vie
 {
     if (index.data(Qt::UserRole + 1).isValid()) {
         float value = index.data(Qt::UserRole + 1).toFloat();
-        // Explicitly cast view to QWidget* for QToolTip::showText
         QToolTip::showText(event->globalPos(), QString::number(value, 'g', 4), (QWidget*)view);
         return true;
     }

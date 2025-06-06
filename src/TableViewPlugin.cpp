@@ -107,7 +107,7 @@ void TableViewPlugin::init()
                         qDebug() << "[DropWidget] Assigning new dataset to _points";
                         _points = candidateDataset;
                         qDebug() << "[DropWidget] _points.isValid() after assignment:" << _points.isValid();
-                        modifyandSetPointData();
+                        modifyandSetNewPointData();
 
                         if (_points.isValid()) {
                             auto newDatasetName = _points->getGuiName();
@@ -125,7 +125,7 @@ void TableViewPlugin::init()
         auto newDatasetName = _points->getGuiName();
         _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
         _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
-        modifyandSetPointData();
+        modifyandSetNewPointData();
     });
 
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
@@ -143,7 +143,7 @@ void TableViewPlugin::setShowBarsForNumericalColumns(bool enabled)
         _tableView->setBarDelegateForNumericalColumns(enabled);
 }
 
-void TableViewPlugin::modifyandSetPointData()
+void TableViewPlugin::modifyandSetNewPointData()
 {
     qDebug() << "[modifyandSetPointData] _points.isValid():" << _points.isValid();
     if (_points.isValid()) {
@@ -151,13 +151,49 @@ void TableViewPlugin::modifyandSetPointData()
         int numOfRows = _points->getNumPoints();
         std::vector<QString> columnNames = _points->getDimensionNames();
         std::vector<int> columnIndices;
+        
         for (int i = 0; i < numOfDims; ++i) {
             columnIndices.push_back(i);
         }
         std::vector<float> xData(numOfRows * numOfDims);
         _points->populateDataForDimensions(xData, columnIndices);
 
-        FastTableData fastData = createTableFromDatasetData(xData, numOfRows, columnNames);
+       
+        auto children = _points->getChildren();
+        std::vector<std::vector<QString>> clusterDataset;
+        std::map<QString, QString> clusterColorMap;
+        std::vector<QString> clusterColumnNames;
+        for (const Dataset<Clusters>& child : children) {
+            if (child->getDataType() == ClusterType) {
+                std::vector<QString> clusterInfo(numOfRows, QString());
+                clusterColumnNames.push_back(child->getGuiName());
+                auto clusterValues = child->getClusters();
+                for (const auto& clusterValue : clusterValues) {
+                    auto clusterName = clusterValue.getName();
+                    auto clusterIndices = clusterValue.getIndices();
+                    QString clusterColor = clusterValue.getColor().name(); 
+                    clusterColorMap[clusterName] = clusterColor; 
+                    for (const auto& index : clusterIndices) {
+                        if (index < numOfRows) {
+                            clusterInfo[index] = clusterName;
+                        }
+                    }
+                }
+                clusterDataset.push_back(clusterInfo); 
+            }
+        }
+
+        
+        std::vector<std::vector<QString>> clusterDatasetRows(numOfRows);
+        for (int r = 0; r < numOfRows; ++r) {
+            clusterDatasetRows[r].resize(clusterDataset.size());
+            for (size_t c = 0; c < clusterDataset.size(); ++c) {
+                clusterDatasetRows[r][c] = clusterDataset[c][r];
+            }
+        }
+
+
+        FastTableData fastData = createTableFromDatasetData(xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames,clusterColorMap);
         _tableView->setData(fastData);
         qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
     } else {

@@ -6,9 +6,13 @@
 #include <QVariantList>
 #include <algorithm>
 #include "TableDataUtils.h"
+#include <QColor>
+#include <optional>
 
 FastTableData::FastTableData(int rows, int cols) {
     resize(rows, cols);
+    m_cellColors.resize(rows, std::vector<std::optional<QColor>>(cols));
+    m_cellTextColors.resize(rows, std::vector<std::optional<QColor>>(cols));
 }
 
 void FastTableData::resize(int rows, int cols) {
@@ -20,6 +24,8 @@ void FastTableData::resize(int rows, int cols) {
     _colMinMax.resize(cols, {0.0, 0.0});
     _rowBarColors.resize(rows);
     _rowVisible.assign(rows, true);
+    m_cellColors.resize(rows, std::vector<std::optional<QColor>>(cols));
+    m_cellTextColors.resize(rows, std::vector<std::optional<QColor>>(cols));
 }
 
 void FastTableData::set(int row, int col, const Value& v) {
@@ -154,6 +160,8 @@ void FastTableData::clear() {
     _rowBarColors.clear();
     _rowVisible.clear();
     _primaryKeyCol = -1;
+    m_cellColors.clear();
+    m_cellTextColors.clear();
 }
 
 bool FastTableData::canFetchMoreRowsTop(int n) const {
@@ -191,6 +199,8 @@ void FastTableData::addColumn(const QString& name, const Value& defaultValue) {
     _cols += 1;
     for (int row = 0; row < _rows; ++row) {
         _data.insert(_data.begin() + row * _cols + (_cols - 1), defaultValue);
+        m_cellColors[row].insert(m_cellColors[row].begin() + (_cols - 1), std::nullopt);
+        m_cellTextColors[row].insert(m_cellTextColors[row].begin() + (_cols - 1), std::nullopt);
     }
 }
 
@@ -201,6 +211,8 @@ bool FastTableData::removeColumn(const QString& name) {
     int col = std::distance(_colNames.begin(), it);
     for (int row = _rows - 1; row >= 0; --row) {
         _data.erase(_data.begin() + row * _cols + col);
+        m_cellColors[row].erase(m_cellColors[row].begin() + col);
+        m_cellTextColors[row].erase(m_cellTextColors[row].begin() + col);
     }
     _colNames.erase(_colNames.begin() + col);
     _colIsNumeric.erase(_colIsNumeric.begin() + col);
@@ -209,4 +221,42 @@ bool FastTableData::removeColumn(const QString& name) {
     else if (_primaryKeyCol > col) _primaryKeyCol--;
     _cols -= 1;
     return true;
+}
+
+void FastTableData::setCellColor(int row, int col, const QColor& color) {
+    if (row >= 0 && row < static_cast<int>(m_cellColors.size()) &&
+        col >= 0 && col < static_cast<int>(m_cellColors[row].size())) {
+        m_cellColors[row][col] = color;
+    }
+}
+
+QColor FastTableData::cellColor(int row, int col) const {
+    if (row >= 0 && row < static_cast<int>(m_cellColors.size()) &&
+        col >= 0 && col < static_cast<int>(m_cellColors[row].size()) &&
+        m_cellColors[row][col].has_value()) {
+        return m_cellColors[row][col].value();
+    }
+    return QColor();
+}
+
+void FastTableData::setCellTextColor(int row, int col, const QColor& color) {
+    if (row >= 0 && row < static_cast<int>(m_cellTextColors.size()) &&
+        col >= 0 && col < static_cast<int>(m_cellTextColors[row].size())) {
+        m_cellTextColors[row][col] = color;
+    }
+}
+
+QColor FastTableData::cellTextColor(int row, int col) const {
+    if (row >= 0 && row < static_cast<int>(m_cellTextColors.size()) &&
+        col >= 0 && col < static_cast<int>(m_cellTextColors[row].size()) &&
+        m_cellTextColors[row][col].has_value()) {
+        return m_cellTextColors[row][col].value();
+    }
+    return QColor();
+}
+
+bool FastTableData::hasCellTextColor(int row, int col) const {
+    return (row >= 0 && row < static_cast<int>(m_cellTextColors.size()) &&
+            col >= 0 && col < static_cast<int>(m_cellTextColors[row].size()) &&
+            m_cellTextColors[row][col].has_value());
 }

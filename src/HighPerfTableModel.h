@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QAbstractTableModel>
+#include <QColor>
 #include "FastTableData.h"
 
 /**

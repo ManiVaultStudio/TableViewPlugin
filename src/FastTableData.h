@@ -6,6 +6,7 @@
 #include <QColor>
 #include <QVariantMap>
 #include <QVariantList>
+#include <optional>
 
 /**
  * @brief FastTableData is a high-performance, flat, row-major table structure for large datasets.
@@ -70,6 +71,15 @@ public:
     void addColumn(const QString& name, const Value& defaultValue = Value{});
     bool removeColumn(const QString& name);
 
+    // Add method for setting cell color
+    void setCellColor(int row, int col, const QColor& color);
+    QColor cellColor(int row, int col) const;
+
+    // Add for text color
+    void setCellTextColor(int row, int col, const QColor& color);
+    QColor cellTextColor(int row, int col) const;
+    bool hasCellTextColor(int row, int col) const;
+
 private:
     int _rows = 0, _cols = 0;
     std::vector<Value> _data;
@@ -79,4 +89,9 @@ private:
     int _primaryKeyCol = -1;
     std::vector<QColor> _rowBarColors;
     std::vector<bool> _rowVisible;
+
+    // Add a 2D vector for cell colors
+    std::vector<std::vector<std::optional<QColor>>> m_cellColors;
+    // Add for text color
+    std::vector<std::vector<std::optional<QColor>>> m_cellTextColors;
 };

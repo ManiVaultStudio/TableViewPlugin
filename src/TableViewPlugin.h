@@ -27,7 +27,7 @@ public:
     void init() override;
     void onDataEvent(mv::DatasetEvent* dataEvent);
     void setShowBarsForNumericalColumns(bool enabled);
-    void modifyandSetPointData();
+    void modifyandSetNewPointData();
 
 protected:
     DropWidget*             _dropWidget;

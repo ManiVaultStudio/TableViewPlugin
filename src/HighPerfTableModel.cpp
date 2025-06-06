@@ -1,4 +1,5 @@
 #include "HighPerfTableModel.h"
+#include "FastTableData.h"
 #include <algorithm>
 
 HighPerfTableModel::HighPerfTableModel(QObject* parent)
@@ -22,6 +23,9 @@ int HighPerfTableModel::columnCount(const QModelIndex&) const {
 QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
     if (!index.isValid())
         return QVariant();
+
+    int row = index.row();
+    int col = index.column();
 
     if (_showBars && role == Qt::UserRole + 1 && isNumericalColumn(index.column())) {
         const auto& v = _data.get(index.row(), index.column());
@@ -51,7 +55,16 @@ QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
             return std::get<QString>(v);
         return {};
     }
+    if (role == Qt::ForegroundRole) {
+        // Use cell text color if set, otherwise default
+        if (_data.hasCellTextColor(row, col)) {
+            return _data.cellTextColor(row, col);
+        }
+    }
     if (role == Qt::BackgroundRole) {
+        QColor color = _data.cellColor(row, col);
+        if (color.isValid())
+            return color;
         return _data.rowBarColor(index.row());
     }
     return {};

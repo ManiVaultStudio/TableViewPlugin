@@ -5,92 +5,117 @@
 void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
     const QModelIndex& index) const
 {
-    // Use UserRole+1 for bar value, but always paint bar if delegate is set
+    // Only handle numerical cells (UserRole+1)
     if (index.data(Qt::UserRole + 1).isValid()) {
         float value = index.data(Qt::UserRole + 1).toFloat();
 
-        float maxAbs = std::max(std::abs(minValue), std::abs(maxValue));
-        if (maxAbs < 1e-6f) maxAbs = 1.0f;
+        if (_displayMode == DisplayMode::Bar) {
+            float maxAbs = std::max(std::abs(minValue), std::abs(maxValue));
+            if (maxAbs < 1e-6f) maxAbs = 1.0f;
 
-        QRect barRect = option.rect.adjusted(4, 4, -4, -4);
-        int centerX = barRect.left() + barRect.width() / 2;
-        int barStartX = centerX;
-        int barEndX = centerX + static_cast<int>((value / maxAbs) * (barRect.width() / 2));
-        if (barEndX < barStartX) std::swap(barStartX, barEndX);
+            QRect barRect = option.rect.adjusted(4, 4, -4, -4);
+            int centerX = barRect.left() + barRect.width() / 2;
+            int barStartX = centerX;
+            int barEndX = centerX + static_cast<int>((value / maxAbs) * (barRect.width() / 2));
+            if (barEndX < barStartX) std::swap(barStartX, barEndX);
 
-        QRect filledRect = barRect;
-        filledRect.setLeft(barStartX);
-        filledRect.setRight(barEndX);
+            QRect filledRect = barRect;
+            filledRect.setLeft(barStartX);
+            filledRect.setRight(barEndX);
 
-        painter->save();
-        painter->setRenderHint(QPainter::Antialiasing, true);
+            painter->save();
+            painter->setRenderHint(QPainter::Antialiasing, true);
 
-        QColor bgColor = (option.state & QStyle::State_Selected)
-            ? option.palette.color(QPalette::Highlight)
-            : option.palette.color(QPalette::Base);
-        painter->fillRect(option.rect, bgColor);
+            QColor bgColor = (option.state & QStyle::State_Selected)
+                ? option.palette.color(QPalette::Highlight)
+                : option.palette.color(QPalette::Base);
+            painter->fillRect(option.rect, bgColor);
 
-        // Get row bar color if available
-        QColor barColor = QColor(255, 140, 0); // Default orange
-        // Try to get row color from FastTableData if model supports it
-        const QAbstractItemModel* model = index.model();
-        if (model) {
-            QVariant rowColorVar = model->data(model->index(index.row(), 0), Qt::BackgroundRole);
-            if (rowColorVar.canConvert<QColor>()) {
-                barColor = rowColorVar.value<QColor>();
+            auto getContrastColor = [](const QColor& bg) -> QColor {
+                double luminance = (0.299 * bg.red() + 0.587 * bg.green() + 0.114 * bg.blue()) / 255.0;
+                return (luminance > 0.5) ? QColor(Qt::black) : QColor(Qt::white);
+            };
+
+            QColor barColor = QColor(255, 140, 0); // Default orange
+            const QAbstractItemModel* model = index.model();
+            if (model) {
+                QVariant rowColorVar = model->data(model->index(index.row(), 0), Qt::BackgroundRole);
+                if (rowColorVar.canConvert<QColor>()) {
+                    barColor = rowColorVar.value<QColor>();
+                }
             }
+            if (!isColorContrastive(barColor, bgColor)) {
+                barColor = getContrastColor(bgColor);
+            }
+
+            QColor axisColor = getContrastColor(bgColor);
+
+            QPen axisPen(axisColor);
+            axisPen.setWidth(2);
+            axisPen.setStyle(Qt::DotLine);
+
+            int axisExtra = std::max(2, barRect.height() / 8);
+            int axisTop = barRect.top() - axisExtra;
+            int axisBottom = barRect.bottom() + axisExtra;
+
+            painter->setPen(axisPen);
+            painter->drawLine(centerX, axisTop, centerX, axisBottom);
+
+            if (std::abs(value) > 1e-6f) {
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(barColor);
+                painter->drawRect(filledRect.normalized());
+            }
+
+            // Do NOT draw value text in bar mode
+
+            if (option.state & QStyle::State_HasFocus) {
+                QStyleOptionFocusRect focusOption;
+                focusOption.QStyleOption::operator=(option);
+                focusOption.rect = option.rect;
+                focusOption.state |= QStyle::State_KeyboardFocusChange;
+                focusOption.backgroundColor = bgColor;
+                QApplication::style()->drawPrimitive(QStyle::PE_FrameFocusRect, &focusOption, painter);
+            }
+
+            painter->restore();
+        } else {
+            // Number mode: just draw the value as text
+            QColor bgColor = (option.state & QStyle::State_Selected)
+                ? option.palette.color(QPalette::Highlight)
+                : option.palette.color(QPalette::Base);
+            QColor textColor = (option.state & QStyle::State_Selected)
+                ? option.palette.color(QPalette::HighlightedText)
+                : QColor(Qt::black);
+
+            painter->save();
+            painter->fillRect(option.rect, bgColor);
+            painter->setPen(textColor);
+            QString valueText = QString::number(value, 'g', 4);
+            painter->drawText(option.rect.adjusted(4, 4, -4, -4), Qt::AlignCenter, valueText);
+            painter->restore();
         }
-
-        QColor axisColor;
-        auto isColorClose = [](const QColor& c1, const QColor& c2, int threshold = 16) {
-            return (std::abs(c1.red() - c2.red()) < threshold &&
-                std::abs(c1.green() - c2.green()) < threshold &&
-                std::abs(c1.blue() - c2.blue()) < threshold);
-        };
-        bool bgIsBlack = isColorClose(bgColor, QColor(Qt::black));
-        bool bgIsWhite = isColorClose(bgColor, QColor(Qt::white));
-        if (bgIsBlack) {
-            axisColor = QColor(Qt::white);
-        }
-        else if (bgIsWhite) {
-            axisColor = QColor(Qt::black);
-        }
-        else {
-            double luminance = (0.299 * bgColor.red() + 0.587 * bgColor.green() + 0.114 * bgColor.blue()) / 255.0;
-            axisColor = (luminance > 0.5) ? QColor(Qt::black) : QColor(Qt::white);
-        }
-
-        QPen axisPen(axisColor);
-        axisPen.setWidth(2);
-        axisPen.setStyle(Qt::DotLine);
-
-        int axisExtra = std::max(2, barRect.height() / 8);
-        int axisTop = barRect.top() - axisExtra;
-        int axisBottom = barRect.bottom() + axisExtra;
-
-        painter->setPen(axisPen);
-        painter->drawLine(centerX, axisTop, centerX, axisBottom);
-
-        if (std::abs(value) > 1e-6f) {
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(barColor);
-            painter->drawRect(filledRect.normalized());
-        }
-
-        if (option.state & QStyle::State_HasFocus) {
-            QStyleOptionFocusRect focusOption;
-            focusOption.QStyleOption::operator=(option);
-            focusOption.rect = option.rect;
-            focusOption.state |= QStyle::State_KeyboardFocusChange;
-            focusOption.backgroundColor = bgColor;
-            QApplication::style()->drawPrimitive(QStyle::PE_FrameFocusRect, &focusOption, painter);
-        }
-
-        painter->restore();
     }
     else {
+        // For text cells, just draw as text (default)
         QStyledItemDelegate::paint(painter, option, index);
     }
+}
+
+// Helper: check if two colors are contrastive enough (WCAG 2.0)
+bool CorrelationBarDelegate::isColorContrastive(const QColor& c1, const QColor& c2) const
+{
+    auto luminance = [](const QColor& c) {
+        auto channel = [](int v) {
+            double d = v / 255.0;
+            return (d <= 0.03928) ? d / 12.92 : std::pow((d + 0.055) / 1.055, 2.4);
+        };
+        return 0.2126 * channel(c.red()) + 0.7152 * channel(c.green()) + 0.0722 * channel(c.blue());
+    };
+    double l1 = luminance(c1) + 0.05;
+    double l2 = luminance(c2) + 0.05;
+    double ratio = l1 > l2 ? l1 / l2 : l2 / l1;
+    return ratio > 2.5; // 3:1 is minimum for UI, 4.5:1 for text, 2.5 is a compromise for bars
 }
 
 bool CorrelationBarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* view,

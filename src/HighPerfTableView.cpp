@@ -19,6 +19,7 @@
 HighPerfTableView::HighPerfTableView(QWidget* parent)
     : QTableView(parent)
     , _model(new HighPerfTableModel(this))
+    , _showBars(true)
 {
     setModel(_model);
     setupSelectionMode();
@@ -72,7 +73,10 @@ void HighPerfTableView::setBarDelegateForNumericalColumns(bool enabled)
         if (_model->isNumericalColumn(col)) {
             float minVal, maxVal;
             _model->getColumnMinMax(col, minVal, maxVal);
-            auto* delegate = new CorrelationBarDelegate(minVal, maxVal, this);
+            auto* delegate = new CorrelationBarDelegate(
+                minVal, maxVal, this,
+                _showBars ? CorrelationBarDelegate::DisplayMode::Bar : CorrelationBarDelegate::DisplayMode::Number
+            );
             this->setItemDelegateForColumn(col, delegate);
             _barDelegates[col] = delegate;
         }
@@ -93,12 +97,27 @@ void HighPerfTableView::setBarDelegateForColumn(int column, bool enabled, float 
     }
 }
 
+// Add this function to allow toggling between bar/number mode
+void HighPerfTableView::setBarDelegateDisplayMode(bool showBars)
+{
+    _showBars = showBars;
+    for (auto it = _barDelegates.begin(); it != _barDelegates.end(); ++it) {
+        if (it.value()) {
+            it.value()->setDisplayMode(
+                showBars ? CorrelationBarDelegate::DisplayMode::Bar : CorrelationBarDelegate::DisplayMode::Number
+            );
+        }
+    }
+    viewport()->update();
+}
+
 void HighPerfTableView::setShowBars(bool show)
 {
     auto* m = qobject_cast<HighPerfTableModel*>(model());
     if (m) {
         m->setShowBars(show);
         if (m->showBars() == show) {
+            setBarDelegateDisplayMode(show); // update mode for all delegates
             setBarDelegateForNumericalColumns(show);
             viewport()->update();
         }

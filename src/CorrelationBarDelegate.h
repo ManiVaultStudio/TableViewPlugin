@@ -12,9 +12,14 @@
  */
 class CorrelationBarDelegate : public QStyledItemDelegate {
 public:
-    CorrelationBarDelegate(float minCorr, float maxCorr, QObject* parent = nullptr)
-        : QStyledItemDelegate(parent), minValue(minCorr), maxValue(maxCorr) {
+    enum class DisplayMode { Bar, Number };
+
+    CorrelationBarDelegate(float minCorr, float maxCorr, QObject* parent = nullptr, DisplayMode mode = DisplayMode::Bar)
+        : QStyledItemDelegate(parent), minValue(minCorr), maxValue(maxCorr), _displayMode(mode) {
     }
+
+    void setDisplayMode(DisplayMode mode) { _displayMode = mode; }
+    DisplayMode displayMode() const { return _displayMode; }
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
         const QModelIndex& index) const override;
@@ -24,4 +29,8 @@ public:
 
 private:
     float minValue, maxValue;
+    DisplayMode _displayMode;
+
+    // Returns true if the two colors are contrastive enough for accessibility
+    bool isColorContrastive(const QColor& c1, const QColor& c2) const;
 };

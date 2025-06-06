@@ -37,6 +37,9 @@ public:
     void setShowBars(bool show);
     bool showBars() const;
 
+    // Add this
+    void setBarDelegateDisplayMode(bool showBars);
+
     // Export the whole table to a file (CSV or other formats)
     bool exportToFile(QWidget* parent = nullptr, const QString& filePath = QString(), const QString& format = "csv");
 

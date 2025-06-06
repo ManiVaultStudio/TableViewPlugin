@@ -1,0 +1,10 @@
+#include "SettingsAction.h"
+#include <QVariantList>
+#include <QString>
+#include <vector>
+#include <algorithm>
+#include "FastTableData.h"
+#include "HighPerfTableModel.h"
+#include <QStringList>
+#include "HighPerfTableView.h"
+#include "TableDataUtils.h"

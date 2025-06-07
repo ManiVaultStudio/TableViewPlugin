@@ -17,7 +17,12 @@ static QColor getContrastingTextColor(const QColor& bg) {
     return (luminance > 186) ? QColor(Qt::black) : QColor(Qt::white);
 }
 
+// Overload: Use default background color if not provided
 FastTableData createTableFromVariantMap(const QVariantMap& map) {
+    return createTableFromVariantMap(map, Qt::white);
+}
+
+FastTableData createTableFromVariantMap(const QVariantMap& map, const QColor& defaultBgColor) {
 
     std::map<QString, QString> clusterColorMap;
     QVariantMap mapCopy = map;
@@ -97,7 +102,12 @@ FastTableData createTableFromVariantMap(const QVariantMap& map) {
                         continue; // skip invalid color
                     }
                     table.setCellColor(r, c, color);
-                    table.setCellTextColor(r, c, getContrastingTextColor(color));
+                    // Use the actual cell background color if set, otherwise fallback to defaultBgColor
+                    QColor bgColor = color.isValid() ? color : defaultBgColor;
+                    table.setCellTextColor(r, c, getContrastingTextColor(bgColor));
+                } else {
+                    // If no color mapping, use default background color for contrast
+                    table.setCellTextColor(r, c, getContrastingTextColor(defaultBgColor));
                 }
             }
         }
@@ -112,7 +122,19 @@ FastTableData createTableFromDatasetData(
     std::vector<QString> pointColumnNames,
     const std::vector<std::vector<QString>>& clusterDataset,
     const std::vector<QString>& clusterColumnNames,
-    const std::map<QString,QString>& clusterColorMap)
+    const std::vector<std::map<QString, QString>>& clusterColorMap)
+{
+    return createTableFromDatasetData(pointDataset, numOfRows, pointColumnNames, clusterDataset, clusterColumnNames, clusterColorMap, Qt::white);
+}
+
+FastTableData createTableFromDatasetData(
+    const std::vector<float>& pointDataset,
+    int numOfRows,
+    std::vector<QString> pointColumnNames,
+    const std::vector<std::vector<QString>>& clusterDataset,
+    const std::vector<QString>& clusterColumnNames,
+    const std::vector<std::map<QString, QString>>& clusterColorMap,
+    const QColor& defaultBgColor)
 {
     if ((pointDataset.empty() || pointColumnNames.size() <= 0) && clusterDataset.empty())
         return FastTableData();
@@ -162,26 +184,36 @@ FastTableData createTableFromDatasetData(
             }
         }
        
-        // Fix: Validate color string before using QColor, skip invalid colors
+        // Use per-column color map
         for (int c = 0; c < clusterDataColumns; ++c) {
             int colIdx = (pointColumnNames.size() > 0 ? pointColumnNames.size() : 0) + c;
+            const std::map<QString, QString>* colorMapPtr = nullptr;
+            if (c < static_cast<int>(clusterColorMap.size())) {
+                colorMapPtr = &clusterColorMap[c];
+            }
             for (int r = 0; r < numOfRows; ++r) {
                 if (static_cast<size_t>(c) < clusterDataset[r].size()) {
                     const QString& clusterLabel = clusterDataset[r][c];
-                    auto it = clusterColorMap.find(clusterLabel);
-                    if (it != clusterColorMap.end()) {
-                        QColor color(it->second);
-                        if (!color.isValid()) {
-                            // Optionally: qWarning("Invalid color string for label '%s': '%s'", qPrintable(clusterLabel), qPrintable(it->second));
-                            continue; // skip invalid color
+                    if (colorMapPtr) {
+                        auto it = colorMapPtr->find(clusterLabel);
+                        if (it != colorMapPtr->end()) {
+                            QColor color(it->second);
+                            if (!color.isValid()) {
+                                continue; // skip invalid color
+                            }
+                            table.setCellColor(r, colIdx, color);
+                            QColor bgColor = color.isValid() ? color : defaultBgColor;
+                            table.setCellTextColor(r, colIdx, getContrastingTextColor(bgColor));
+                        } else {
+                            // If no color mapping, use default background color for contrast
+                            table.setCellTextColor(r, colIdx, getContrastingTextColor(defaultBgColor));
                         }
-                        table.setCellColor(r, colIdx, color);
-                        table.setCellTextColor(r, colIdx, getContrastingTextColor(color));
+                    } else {
+                        table.setCellTextColor(r, colIdx, getContrastingTextColor(defaultBgColor));
                     }
                 }
             }
         }
-       
     }
 
     for (int c = 0; c < static_cast<int>(clusterColumnNames.size()) && c < clusterDataColumns; ++c) {
@@ -201,7 +233,19 @@ FastTableData createVariantMapFromDatasetData(
     const std::vector<QString>& pointColumnNames,
     const std::vector<std::vector<QString>>& clusterDataset,
     const std::vector<QString>& clusterColumnNames,
-    const std::map<QString, QString>& clusterColorMap )
+    const std::vector<std::map<QString, QString>>& clusterColorMap)
+{
+    return createVariantMapFromDatasetData(pointDataset, numOfRows, pointColumnNames, clusterDataset, clusterColumnNames, clusterColorMap, Qt::white);
+}
+
+FastTableData createVariantMapFromDatasetData(
+    const std::vector<float>& pointDataset,
+    int numOfRows,
+    const std::vector<QString>& pointColumnNames,
+    const std::vector<std::vector<QString>>& clusterDataset,
+    const std::vector<QString>& clusterColumnNames,
+    const std::vector<std::map<QString, QString>>& clusterColorMap,
+    const QColor& defaultBgColor)
 {
     QVariantMap map;
     int numOfDims = static_cast<int>(pointColumnNames.size());
@@ -236,14 +280,16 @@ FastTableData createVariantMapFromDatasetData(
         map.insert(colName, col);
     }
 
-
     if (!clusterColorMap.empty()) {
         QVariantMap colorMapQVar;
-        for (const auto& pair : clusterColorMap) {
-            colorMapQVar.insert(pair.first, pair.second);
+        for (int c = 0; c < static_cast<int>(clusterColorMap.size()); ++c) {
+            QVariantMap columnColorMap;
+            for (const auto& pair : clusterColorMap[c]) {
+                columnColorMap.insert(pair.first, pair.second);
+            }
+            map.insert(QString("__clusterColorMap_%1").arg(c), columnColorMap);
         }
-        map.insert("__clusterColorMap", colorMapQVar);
     }
 
-    return createTableFromVariantMap(map);
+    return createTableFromVariantMap(map, defaultBgColor);
 }

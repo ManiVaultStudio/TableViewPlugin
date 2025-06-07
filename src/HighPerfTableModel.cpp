@@ -191,3 +191,13 @@ bool HighPerfTableModel::removeColumn(const QString& name) {
     endResetModel();
     return result;
 }
+
+void HighPerfTableModel::setDefaultClusterBackgroundColor(const QColor& color)
+{
+    m_defaultClusterBgColor = color;
+}
+
+QColor HighPerfTableModel::defaultClusterBackgroundColor() const
+{
+    return m_defaultClusterBgColor;
+}

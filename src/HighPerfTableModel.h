@@ -37,7 +37,12 @@ public:
     void addColumn(const QString& name, const FastTableData::Value& defaultValue = FastTableData::Value{});
     bool removeColumn(const QString& name);
 
+    // Add setter for default background color for cluster contrast
+    void setDefaultClusterBackgroundColor(const QColor& color);
+    QColor defaultClusterBackgroundColor() const;
+
 private:
     FastTableData _data;
     bool _showBars = false;
+    QColor m_defaultClusterBgColor = Qt::white;
 };

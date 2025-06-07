@@ -1,15 +1,19 @@
 #pragma once
 
 #include <QVariantMap>
+#include <QColor>
+#include <map>
+#include <vector>
 #include "FastTableData.h"
 
 /**
  * Creates a FastTableData from a QVariantMap and applies clusterColorMap to color cluster cells.
  * If the QVariantMap contains a key "__clusterColorMap" (QVariantMap of label->color), it will be used for coloring.
  * @param map The QVariantMap. May contain a "__clusterColorMap" entry.
+ * @param defaultBgColor The default background color to use for contrast calculations.
  * @return FastTableData with colored cluster cells.
  */
-FastTableData createTableFromVariantMap(const QVariantMap& map);
+FastTableData createTableFromVariantMap(const QVariantMap& map, const QColor& defaultBgColor = Qt::white);
 
 /**
  * Creates a FastTableData from the given datasets and applies clusterColorMap to color cluster cells.
@@ -18,7 +22,8 @@ FastTableData createTableFromVariantMap(const QVariantMap& map);
  * @param pointColumnNames Names of point columns.
  * @param clusterDataset The cluster data.
  * @param clusterColumnNames Names of cluster columns.
- * @param clusterColorMap Map from cluster label to color (as string, e.g. "#RRGGBB").
+ * @param clusterColorMap Vector of maps from cluster label to color (as string, e.g. "#RRGGBB"), one map per cluster column.
+ * @param defaultBgColor The default background color to use for contrast calculations.
  * @return FastTableData with colored cluster cells.
  */
 FastTableData createTableFromDatasetData(
@@ -27,7 +32,8 @@ FastTableData createTableFromDatasetData(
     std::vector<QString> pointColumnNames = std::vector<QString>(),
     const std::vector<std::vector<QString>>& clusterDataset = std::vector<std::vector<QString>>(),
     const std::vector<QString>& clusterColumnNames = std::vector<QString>(),
-    const std::map<QString, QString>& clusterColorMap = std::map<QString, QString>()
+    const std::vector<std::map<QString, QString>>& clusterColorMap = std::vector<std::map<QString, QString>>(),
+    const QColor& defaultBgColor = Qt::white
 );
 
 /**
@@ -38,7 +44,8 @@ FastTableData createTableFromDatasetData(
  * @param pointColumnNames Names of point columns.
  * @param clusterDataset The cluster data.
  * @param clusterColumnNames Names of cluster columns.
- * @param clusterColorMap Map from cluster label to color (as string, e.g. "#RRGGBB").
+ * @param clusterColorMap Vector of maps from cluster label to color (as string, e.g. "#RRGGBB"), one map per cluster column.
+ * @param defaultBgColor The default background color to use for contrast calculations.
  * @return FastTableData with colored cluster cells.
  */
 FastTableData createVariantMapFromDatasetData(
@@ -47,5 +54,6 @@ FastTableData createVariantMapFromDatasetData(
     const std::vector<QString>& pointColumnNames,
     const std::vector<std::vector<QString>>& clusterDataset,
     const std::vector<QString>& clusterColumnNames,
-    const std::map<QString, QString>& clusterColorMap
+    const std::vector<std::map<QString, QString>>& clusterColorMap,
+    const QColor& defaultBgColor = Qt::white
 );

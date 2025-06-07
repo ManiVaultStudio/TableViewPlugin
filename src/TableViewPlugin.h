@@ -28,13 +28,27 @@ public:
     void onDataEvent(mv::DatasetEvent* dataEvent);
     void setShowBarsForNumericalColumns(bool enabled);
     void modifyandSetNewPointData();
+public: // Serialization
 
+    /**
+     * Load widget action from variant map
+     * @param Variant map representation of the widget action
+     */
+    void fromVariantMap(const QVariantMap& variantMap) override;
+
+    /**
+     * Save widget action to variant map
+     * @return Variant map representation of the widget action
+     */
+    QVariantMap toVariantMap() const override;
+    
 protected:
     DropWidget*             _dropWidget;
     mv::Dataset<Points>     _points;
     QString                 _currentDatasetName;
     QLabel*                 _currentDatasetNameLabel;
-    HighPerfTableView*      _tableView = nullptr;
+
+    SettingsAction        _settingsAction;
 };
 
 class TableViewPluginFactory : public ViewPluginFactory

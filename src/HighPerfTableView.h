@@ -13,6 +13,7 @@
 #include <QList>
 #include <QVariant>
 #include <QTimer>
+#include <QColor>
 #include "CorrelationBarDelegate.h"
 #include "FastTableData.h"
 #include "HighPerfTableModel.h"
@@ -40,6 +41,8 @@ public:
 
     void addColumn(const QString& name, const FastTableData::Value& defaultValue = FastTableData::Value{});
     bool removeColumn(const QString& name);
+
+    QColor currentTableBackgroundColor() const;
 
 signals:
     void selectionChangedWithValues(const QList<QVariantList>& selectedValues);

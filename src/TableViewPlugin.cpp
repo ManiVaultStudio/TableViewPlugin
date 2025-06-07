@@ -19,7 +19,8 @@ TableViewPlugin::TableViewPlugin(const PluginFactory* factory) :
     _points(),
     _currentDatasetName(),
     _currentDatasetNameLabel(new QLabel()),
-    _tableView(new HighPerfTableView())
+    _settingsAction(*this)//,
+    //_tableView(new HighPerfTableView())
 {
     _currentDatasetNameLabel->setAcceptDrops(true);
     _currentDatasetNameLabel->setAlignment(Qt::AlignCenter);
@@ -48,7 +49,7 @@ void TableViewPlugin::init()
 {
     auto layout = new QVBoxLayout();
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(_tableView);
+    layout->addWidget(_settingsAction.getTableViewAction());
     layout->addWidget(_currentDatasetNameLabel);
     getWidget().setLayout(layout);
 
@@ -134,13 +135,13 @@ void TableViewPlugin::init()
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
     _eventListener.registerDataEventByType(PointType, std::bind(&TableViewPlugin::onDataEvent, this, std::placeholders::_1));
 
-    _tableView->setBarDelegateForNumericalColumns(true);
+    _settingsAction.getTableViewAction()->setBarDelegateForNumericalColumns(true);
 }
 
 void TableViewPlugin::setShowBarsForNumericalColumns(bool enabled)
 {
-    if (_tableView)
-        _tableView->setBarDelegateForNumericalColumns(enabled);
+    if (_settingsAction.getTableViewAction())
+        _settingsAction.getTableViewAction()->setBarDelegateForNumericalColumns(enabled);
 }
 
 void TableViewPlugin::modifyandSetNewPointData()
@@ -158,21 +159,27 @@ void TableViewPlugin::modifyandSetNewPointData()
         std::vector<float> xData(numOfRows * numOfDims);
         _points->populateDataForDimensions(xData, columnIndices);
 
-       
         auto children = _points->getChildren();
         std::vector<std::vector<QString>> clusterDataset;
-        std::map<QString, QString> clusterColorMap;
         std::vector<QString> clusterColumnNames;
+        std::vector<std::map<QString, QString>> clusterColorMap; // Vector of maps: one per cluster column
+
         for (const Dataset<Clusters>& child : children) {
             if (child->getDataType() == ClusterType) {
                 std::vector<QString> clusterInfo(numOfRows, QString());
+                std::map<QString, QString> colorMapForThisColumn;
                 clusterColumnNames.push_back(child->getGuiName());
                 auto clusterValues = child->getClusters();
                 for (const auto& clusterValue : clusterValues) {
                     auto clusterName = clusterValue.getName();
                     auto clusterIndices = clusterValue.getIndices();
                     QString clusterColor = clusterValue.getColor().name(); 
-                    clusterColorMap[clusterName] = clusterColor; 
+                    
+                    // Map cluster label to color for this column
+                    if (!clusterName.isEmpty() && !clusterColor.isEmpty()) {
+                        colorMapForThisColumn[clusterName] = clusterColor;
+                    }
+
                     for (const auto& index : clusterIndices) {
                         if (index < numOfRows) {
                             clusterInfo[index] = clusterName;
@@ -180,10 +187,11 @@ void TableViewPlugin::modifyandSetNewPointData()
                     }
                 }
                 clusterDataset.push_back(clusterInfo); 
+                clusterColorMap.push_back(colorMapForThisColumn);
             }
         }
 
-        
+        // Transpose clusterDataset to rows
         std::vector<std::vector<QString>> clusterDatasetRows(numOfRows);
         for (int r = 0; r < numOfRows; ++r) {
             clusterDatasetRows[r].resize(clusterDataset.size());
@@ -191,14 +199,15 @@ void TableViewPlugin::modifyandSetNewPointData()
                 clusterDatasetRows[r][c] = clusterDataset[c][r];
             }
         }
-
-
-        FastTableData fastData = createTableFromDatasetData(xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames,clusterColorMap);
-        _tableView->setData(fastData);
+       
+        QColor bgColor = _settingsAction.getTableViewAction()->currentTableBackgroundColor();
+        FastTableData fastData = createTableFromDatasetData(
+            xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames, clusterColorMap, bgColor);
+        _settingsAction.getTableViewAction()->setData(fastData);
         qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
     } else {
         qDebug() << "[modifyandSetPointData] No valid points dataset, clearing table.";
-        _tableView->setData(FastTableData());
+        _settingsAction.getTableViewAction()->setData(FastTableData());
     }
 }
 
@@ -285,4 +294,20 @@ mv::gui::PluginTriggerActions TableViewPluginFactory::getPluginTriggerActions(co
     }
     */
     return pluginTriggerActions;
+}
+
+
+void TableViewPlugin::fromVariantMap(const QVariantMap& variantMap)
+{
+    ViewPlugin::fromVariantMap(variantMap);
+    mv::util::variantMapMustContain(variantMap, "TableViewPlugin:Settings");
+    _settingsAction.fromVariantMap(variantMap["TableViewPlugin:Settings"].toMap());
+}
+
+QVariantMap TableViewPlugin::toVariantMap() const
+{
+    QVariantMap variantMap = ViewPlugin::toVariantMap();
+
+    _settingsAction.insertIntoVariantMap(variantMap);
+    return variantMap;
 }

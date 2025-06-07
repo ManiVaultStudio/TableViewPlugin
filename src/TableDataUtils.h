@@ -55,3 +55,12 @@ FastTableData createVariantMapFromDatasetData(
     const std::vector<QString>& clusterColumnNames,
     const std::vector<std::map<QString, QString>>& clusterColorMap
 );
+
+/**
+ * Utility function to get the background color for numeric cells based on their value, minimum, and maximum.
+ * @param value The numeric value of the cell.
+ * @param minVal The minimum value in the column.
+ * @param maxVal The maximum value in the column.
+ * @return QColor representing the background color for the cell.
+ */
+QColor getNumericCellColor(double value, double minVal, double maxVal);

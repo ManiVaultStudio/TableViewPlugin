@@ -17,6 +17,25 @@ static QColor getContrastingTextColor(const QColor& bg) {
     return (luminance > 186) ? QColor(Qt::black) : QColor(Qt::white);
 }
 
+// Utility: Map numeric value to a color (blue-white-red gradient)
+QColor getNumericCellColor(double value, double minVal, double maxVal) {
+    if (minVal == maxVal) return QColor(220, 220, 220); // neutral gray if no range
+    double norm = (value - minVal) / (maxVal - minVal);
+    // Blue (low) to white (mid) to red (high)
+    int r, g, b;
+    if (norm < 0.5) {
+        // Blue to white
+        double t = norm * 2.0;
+        r = g = 255 * t;
+        b = 255;
+    } else {
+        // White to red
+        double t = (norm - 0.5) * 2.0;
+        r = 255;
+        g = b = 255 * (1.0 - t);
+    }
+    return QColor(r, g, b);
+}
 
 FastTableData createTableFromVariantMap(const QVariantMap& map) {
 
@@ -82,6 +101,21 @@ FastTableData createTableFromVariantMap(const QVariantMap& map) {
         table.setColumnIsNumeric(c, isNumeric);
         if (isNumeric)
             table.setColumnMinMax(c, minVal, maxVal);
+    }
+
+    // Set cell colors for numeric columns (non-bar, non-cluster)
+    for (int c = 0; c < cols; ++c) {
+        if (table.columnIsNumeric(c)) {
+            double minVal, maxVal;
+            table.getColumnMinMax(c, minVal, maxVal);
+            for (int r = 0; r < rows; ++r) {
+                QVariant v = columns[c][r];
+                double d = v.toDouble();
+                QColor bg = getNumericCellColor(d, minVal, maxVal);
+                table.setCellColor(r, c, bg);
+                table.setCellTextColor(r, c, getContrastingTextColor(bg));
+            }
+        }
     }
 
     // Fix: Validate color string before using QColor, skip invalid colors
@@ -153,6 +187,14 @@ FastTableData createTableFromDatasetData(
                 maxVal = std::max(maxVal, value);
             }
             table.setColumnMinMax(c, minVal, maxVal);
+
+            // Set numeric cell colors for this column
+            for (int r = 0; r < numOfRows; ++r) {
+                double value = pointDataset[r * pointColumnNames.size() + c];
+                QColor bg = getNumericCellColor(value, minVal, maxVal);
+                table.setCellColor(r, c, bg);
+                table.setCellTextColor(r, c, getContrastingTextColor(bg));
+            }
         }
     }
 

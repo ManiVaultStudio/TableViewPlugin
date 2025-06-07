@@ -206,7 +206,7 @@ void TableViewPlugin::modifyandSetNewPointData()
        
         QColor bgColor = _settingsAction.getTableViewAction()->currentTableBackgroundColor();
         FastTableData fastData = createTableFromDatasetData(
-            xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames, clusterColorMap);
+            xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames);
         _settingsAction.getTableViewAction()->setData(fastData);
         qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
     } else {

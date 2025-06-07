@@ -65,11 +65,14 @@ QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
         QColor color = _data.cellColor(row, col);
         if (color.isValid())
             return color;
-        // If this is a cluster column and no color is set, use a default light gray
+        
         if (!_data.columnIsNumeric(col)) {
             // You can adjust the color as needed
-            return QColor(0, 0, 0); 
+            return QColor();
         }
+        // if contains numeric but not bars
+
+
         return _data.rowBarColor(index.row());
     }
     return {};

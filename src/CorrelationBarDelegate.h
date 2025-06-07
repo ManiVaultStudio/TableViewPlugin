@@ -12,6 +12,29 @@
  */
 class CorrelationBarDelegate : public QStyledItemDelegate {
 public:
+    enum class ColorMapType {
+        BrBG,
+        BuPu,
+        GnBu,
+        Magma,
+        PiYG,
+        Plasma,
+        PuOr,
+        Q_BlGrRd,
+        Qualitative,
+        RdBu,
+        RdPu,
+        RdYlBu,
+        RdYlGn,
+        Reds,
+        Spectral,
+        Viridis,    // Default
+        YlGn,
+        YlGnBu,
+        YlOrBr,
+        // Add more as needed
+    };
+
     enum class DisplayMode { Bar, Number };
 
     CorrelationBarDelegate(float minCorr, float maxCorr, QObject* parent = nullptr, DisplayMode mode = DisplayMode::Bar)

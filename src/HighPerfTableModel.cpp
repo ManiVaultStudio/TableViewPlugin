@@ -236,7 +236,7 @@ HighPerfTableModel::ColorMapType HighPerfTableModel::columnColorMap(int col) con
     auto it = m_columnColorMaps.find(col);
     if (it != m_columnColorMaps.end())
         return it->second;
-    return ColorMapType::Viridis;
+    return ColorMapType::Viridis; // Set Viridis as default
 }
 
 QColor HighPerfTableModel::colorForValue(int col, float value) const {

@@ -302,6 +302,5 @@ bool HighPerfTableView::removeColumn(const QString& name) {
 
 QColor HighPerfTableView::currentTableBackgroundColor() const
 {
-    // Use palette to get the current background color for the table
     return palette().color(QPalette::Base);
 }

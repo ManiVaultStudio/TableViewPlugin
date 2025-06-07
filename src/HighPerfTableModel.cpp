@@ -57,14 +57,12 @@ QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
         return {};
     }
     if (role == Qt::ForegroundRole) {
-        // Use cell text color if set, otherwise default
         if (_data.hasCellTextColor(row, col)) {
             return _data.cellTextColor(row, col);
         }
     }
     if (role == Qt::BackgroundRole) {
         if (isNumericalColumn(col) && !_showBars) {
-            // Only apply colormap to numeric, non-bar columns
             const auto& val = _data.get(row, col);
             if (std::holds_alternative<double>(val)) {
                 float fval = static_cast<float>(std::get<double>(val));
@@ -81,11 +79,8 @@ QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
             return color;
         
         if (!_data.columnIsNumeric(col)) {
-            // You can adjust the color as needed
             return QColor();
         }
-        // if contains numeric but not bars
-
         return _data.rowBarColor(index.row());
     }
     return {};
@@ -154,9 +149,7 @@ void HighPerfTableModel::sort(int column, Qt::SortOrder order) {
     for (int r = 0; r < _data.rowCount(); ++r) {
         for (int c = 0; c < _data.colCount(); ++c) {
             newData.set(r, c, _data.get(rowIndices[r], c));
-            // Copy cell color
             newData.setCellColor(r, c, _data.cellColor(rowIndices[r], c));
-            // Copy cell text color
             newData.setCellTextColor(r, c, _data.cellTextColor(rowIndices[r], c));
         }
         newData.setRowBarColor(r, _data.rowBarColor(rowIndices[r]));
@@ -236,7 +229,7 @@ HighPerfTableModel::ColorMapType HighPerfTableModel::columnColorMap(int col) con
     auto it = m_columnColorMaps.find(col);
     if (it != m_columnColorMaps.end())
         return it->second;
-    return ColorMapType::Viridis; // Set Viridis as default
+    return ColorMapType::Viridis;
 }
 
 QColor HighPerfTableModel::colorForValue(int col, float value) const {

@@ -19,8 +19,7 @@ TableViewPlugin::TableViewPlugin(const PluginFactory* factory) :
     _points(),
     _currentDatasetName(),
     _currentDatasetNameLabel(new QLabel()),
-    _settingsAction(*this)//,
-    //_tableView(new HighPerfTableView())
+    _settingsAction(*this)
 {
     _currentDatasetNameLabel->setAcceptDrops(true);
     _currentDatasetNameLabel->setAlignment(Qt::AlignCenter);
@@ -91,10 +90,8 @@ void TableViewPlugin::init()
             if (dataType == PointType) {
                 const auto description = QString("Load %1 into table view").arg(datasetGuiName);
 
-               
                 if (_points.isValid() && candidateDataset.isValid() && _points == candidateDataset) {
                     qDebug() << "[DropWidget] Same dataset detected, drop not allowed.";
-                    
                     dropRegions << new DropWidget::DropRegion(
                         this,
                         "Drop not allowed",
@@ -164,7 +161,6 @@ void TableViewPlugin::modifyandSetNewPointData()
         std::vector<QString> clusterColumnNames;
         std::vector<std::map<QString, QString>> clusterColorMap;
 
-        // --- Cluster columns logic unchanged ---
         for (const Dataset<Clusters>& child : children) {
             if (child->getDataType() == ClusterType) {
                 std::vector<QString> clusterInfo(numOfRows, QString());
@@ -194,7 +190,6 @@ void TableViewPlugin::modifyandSetNewPointData()
             }
         }
 
-        // Transpose clusterDataset to rows
         std::vector<std::vector<QString>> clusterDatasetRows(numOfRows);
         for (int r = 0; r < numOfRows; ++r) {
             clusterDatasetRows[r].resize(clusterDataset.size());
@@ -203,12 +198,10 @@ void TableViewPlugin::modifyandSetNewPointData()
             }
         }
 
-        // --- Merge childXData columns into xData ---
         for (const Dataset<Points>& child : children)
         {
             if (child->getDataType() == PointType) {
                 qDebug() << "[modifyandSetPointData] Found child dataset of type PointType:" << child->getGuiName();
-                // Append columns for child dataset
                 auto childColumnNames = child->getDimensionNames();
                 int childNumOfDims = child->getNumDimensions();
                 int childNumOfRows = child->getNumPoints();
@@ -219,29 +212,21 @@ void TableViewPlugin::modifyandSetNewPointData()
                 std::vector<float> childXData(childNumOfRows * childNumOfDims);
                 child->populateDataForDimensions(childXData, childColumnIndices);
 
-                // Only merge if row counts match
                 if (childNumOfRows == numOfRows && childNumOfDims > 0) {
-                    // For each child column, append its values to xData column-wise
-                    // xData is row-major: [row0col0, row0col1, ..., row1col0, ...]
-                    // We need to expand xData to have more columns, preserving row order
-
                     int oldNumCols = numOfDims;
                     int newNumCols = numOfDims + childNumOfDims;
                     std::vector<float> mergedXData(numOfRows * newNumCols);
 
-                    // Copy original xData
                     for (int row = 0; row < numOfRows; ++row) {
                         for (int col = 0; col < numOfDims; ++col) {
                             mergedXData[row * newNumCols + col] = xData[row * numOfDims + col];
                         }
                     }
-                    // Copy childXData
                     for (int row = 0; row < numOfRows; ++row) {
                         for (int col = 0; col < childNumOfDims; ++col) {
                             mergedXData[row * newNumCols + (numOfDims + col)] = childXData[row * childNumOfDims + col];
                         }
                     }
-                    // Update xData and columnNames
                     xData = std::move(mergedXData);
                     columnNames.insert(columnNames.end(), childColumnNames.begin(), childColumnNames.end());
                     numOfDims = newNumCols;
@@ -252,8 +237,6 @@ void TableViewPlugin::modifyandSetNewPointData()
         FastTableData fastData = createTableFromDatasetData(
             xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames);
         _settingsAction.getTableViewAction()->setData(fastData);
-
-        // --- Remove addNumericalColumns, as columns are now merged into xData ---
 
         qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
     }
@@ -328,26 +311,8 @@ mv::DataTypes TableViewPluginFactory::supportedDataTypes() const
 mv::gui::PluginTriggerActions TableViewPluginFactory::getPluginTriggerActions(const mv::Datasets& datasets) const
 {
     PluginTriggerActions pluginTriggerActions;
-    /*
-    const auto getPluginInstance = [this]() -> TableViewPlugin* {
-        return dynamic_cast<TableViewPlugin*>(plugins().requestViewPlugin(getKind()));
-    };
-
-    const auto numberOfDatasets = datasets.count();
-
-    if (numberOfDatasets == 1) 
-    {
-        auto pluginTriggerAction = new PluginTriggerAction(const_cast<TableViewPluginFactory*>(this), this, "Table", "View table data", icon(), [this, getPluginInstance, datasets](PluginTriggerAction& pluginTriggerAction) -> void {
-            for (auto dataset : datasets)
-                getPluginInstance();
-        });
-
-        pluginTriggerActions << pluginTriggerAction;
-    }
-    */
     return pluginTriggerActions;
 }
-
 
 void TableViewPlugin::fromVariantMap(const QVariantMap& variantMap)
 {

@@ -27,13 +27,13 @@
 #include <QFormLayout>
 #include <QString>
 #include <string>
-#include<QRadioButton>
+#include <QRadioButton>
 #include <event/Event.h>
 #include <PointData/DimensionPickerAction.h>
 #include <QDebug>
 #include <QLabel>
 #include <string>
-#include<actions/ColorMap1DAction.h>
+#include <actions/ColorMap1DAction.h>
 #include <set>
 #include <actions/HorizontalToolbarAction.h>
 #include <actions/VerticalToolbarAction.h>
@@ -49,16 +49,13 @@ namespace mv
     class CoreInterface;
 }
 
-
 class SettingsAction : public WidgetAction
 {
 public:
-
     class DatasetOptionsHolder : public VerticalGroupAction
     {
     public:
         DatasetOptionsHolder(SettingsAction& settingsAction);
-        
 
         const DatasetPickerAction& getPointDatasetAction() const { return _pointDatasetAction; }
         DatasetPickerAction& getPointDatasetAction() { return _pointDatasetAction; }
@@ -66,50 +63,28 @@ public:
         const VariantAction& getTableDataVariantAction() const { return _tableDataVariant; }
         VariantAction& getTableDataVariantAction() { return _tableDataVariant; }
 
-
     protected:
         SettingsAction& _settingsOptions;
-        DatasetPickerAction                 _pointDatasetAction;
-        VariantAction                       _tableDataVariant;
-
+        DatasetPickerAction _pointDatasetAction;
+        VariantAction _tableDataVariant;
     };
-
-   /* class SettingsHolder : public HorizontalGroupAction
-    {
-    public:
-        SettingsHolder(SettingsAction& settingsAction);
-
-
-
-    protected:
-        SettingsAction& _settingsOptions;
-
-
-    };*/
 
 public:
     SettingsAction(TableViewPlugin& TableViewPlugin);
 
-
     DatasetOptionsHolder& getDatasetOptionsHolder() { return _datasetOptionsHolder; }
-    //SettingsHolder& getSettingsHolder() { return _settingsHolder; }
 
-
-public: // Serialization
+public:
     void fromVariantMap(const QVariantMap& variantMap) override;
     QVariantMap toVariantMap() const override;
 
     HighPerfTableView* getTableViewAction() { return _tableViewAction; }
 
-
 protected:
     TableViewPlugin& _viewerPlugin;
     mv::CoreInterface* _core;
-    DatasetOptionsHolder              _datasetOptionsHolder;
-
-    //SettingsHolder                   _settingsHolder;
+    DatasetOptionsHolder _datasetOptionsHolder;
     HighPerfTableView* _tableViewAction = nullptr;
-
 
     friend class ChannelAction;
 };

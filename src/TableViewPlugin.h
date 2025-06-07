@@ -28,18 +28,9 @@ public:
     void onDataEvent(mv::DatasetEvent* dataEvent);
     void setShowBarsForNumericalColumns(bool enabled);
     void modifyandSetNewPointData();
-public: // Serialization
 
-    /**
-     * Load widget action from variant map
-     * @param Variant map representation of the widget action
-     */
+public:
     void fromVariantMap(const QVariantMap& variantMap) override;
-
-    /**
-     * Save widget action to variant map
-     * @return Variant map representation of the widget action
-     */
     QVariantMap toVariantMap() const override;
     
 protected:
@@ -47,8 +38,7 @@ protected:
     mv::Dataset<Points>     _points;
     QString                 _currentDatasetName;
     QLabel*                 _currentDatasetNameLabel;
-
-    SettingsAction        _settingsAction;
+    SettingsAction          _settingsAction;
 };
 
 class TableViewPluginFactory : public ViewPluginFactory

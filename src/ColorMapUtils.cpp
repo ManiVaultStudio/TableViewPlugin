@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cmath>
 
-// Helper: interpolate between two colors
 static QColor lerp(const QColor& a, const QColor& b, float t) {
     return QColor(
         a.red()   + (b.red()   - a.red())   * t,
@@ -14,8 +13,7 @@ static QColor lerp(const QColor& a, const QColor& b, float t) {
 QColor getColormapColor(CorrelationBarDelegate::ColorMapType type, float norm) {
     norm = std::clamp(norm, 0.0f, 1.0f);
     switch (type) {
-    case CorrelationBarDelegate::ColorMapType::Viridis: // Default
-        // Approximate Viridis
+    case CorrelationBarDelegate::ColorMapType::Viridis:
         return lerp(QColor(68,1,84), QColor(253,231,37), norm);
     case CorrelationBarDelegate::ColorMapType::Magma:
         return lerp(QColor(0,0,3), QColor(251,252,191), norm);
@@ -34,7 +32,6 @@ QColor getColormapColor(CorrelationBarDelegate::ColorMapType type, float norm) {
     case CorrelationBarDelegate::ColorMapType::Q_BlGrRd:
         return lerp(QColor(44,123,182), QColor(215,25,28), norm);
     case CorrelationBarDelegate::ColorMapType::Qualitative:
-        // Just cycle a few qualitative colors
         if (norm < 0.2f) return QColor(31,119,180);
         if (norm < 0.4f) return QColor(255,127,14);
         if (norm < 0.6f) return QColor(44,160,44);

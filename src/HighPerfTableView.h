@@ -19,9 +19,7 @@
 #include "HighPerfTableModel.h"
 #include "TableDataUtils.h"
 
-/**
- * @brief HighPerfTableView is a QTableView for FastTableData, supporting bar/value toggle, sorting, selection, and export.
- */
+// HighPerfTableView is a QTableView for FastTableData, supporting bar/value toggle, sorting, selection, and export.
 class HighPerfTableView : public QTableView {
     Q_OBJECT
 public:

@@ -7,9 +7,7 @@
 #include <QStyleOptionViewItem>
 #include <QHelpEvent>
 
-/**
- * @brief CorrelationBarDelegate draws a bar for numerical values, using row color if available.
- */
+// Draws a bar for numerical values, using row color if available.
 class CorrelationBarDelegate : public QStyledItemDelegate {
 public:
     enum class ColorMapType {
@@ -28,11 +26,10 @@ public:
         RdYlGn,
         Reds,
         Spectral,
-        Viridis,    // Default
+        Viridis,
         YlGn,
         YlGnBu,
         YlOrBr,
-        // Add more as needed
     };
 
     enum class DisplayMode { Bar, Number };

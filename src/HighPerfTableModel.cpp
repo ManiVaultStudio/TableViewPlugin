@@ -133,6 +133,10 @@ void HighPerfTableModel::sort(int column, Qt::SortOrder order) {
     for (int r = 0; r < _data.rowCount(); ++r) {
         for (int c = 0; c < _data.colCount(); ++c) {
             newData.set(r, c, _data.get(rowIndices[r], c));
+            // Copy cell color
+            newData.setCellColor(r, c, _data.cellColor(rowIndices[r], c));
+            // Copy cell text color
+            newData.setCellTextColor(r, c, _data.cellTextColor(rowIndices[r], c));
         }
         newData.setRowBarColor(r, _data.rowBarColor(rowIndices[r]));
     }

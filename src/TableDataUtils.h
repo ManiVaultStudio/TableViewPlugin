@@ -6,11 +6,11 @@
 #include <vector>
 #include "FastTableData.h"
 #include "HighPerfTableModel.h"
+#include "ColorMapUtils.h"
+#include "CorrelationBarDelegate.h" 
 
-// Creates a FastTableData from a QVariantMap and applies clusterColorMap to color cluster cells.
 FastTableData createTableFromVariantMap(const QVariantMap& map);
 
-// Creates a FastTableData from the given datasets and applies clusterColorMap to color cluster cells.
 FastTableData createTableFromDatasetData(
     const std::vector<float>& pointDataset = std::vector<float>(),
     int numOfRows = 0,
@@ -20,8 +20,6 @@ FastTableData createTableFromDatasetData(
     const std::vector<std::map<QString, QString>>& clusterColorMap = std::vector<std::map<QString, QString>>()
 );
 
-// Creates a FastTableData from the given datasets and applies clusterColorMap to color cluster cells.
-// The clusterColorMap will be included in the QVariantMap under the key "__clusterColorMap".
 FastTableData createVariantMapFromDatasetData(
     const std::vector<float>& pointDataset,
     int numOfRows,
@@ -31,12 +29,14 @@ FastTableData createVariantMapFromDatasetData(
     const std::vector<std::map<QString, QString>>& clusterColorMap
 );
 
-// Utility function to get the background color for numeric cells based on their value, minimum, and maximum.
 QColor getNumericCellColor(double value, double minVal, double maxVal);
+
+CorrelationBarDelegate::ColorMapType toCorrelationBarColorMapType(HighPerfTableModel::ColorMapType type);
 
 namespace TableDataUtils {
 
-// Map normalized value [0,1] to QColor using the specified colormap.
-QColor colormapColor(float norm, HighPerfTableModel::ColorMapType cmap);
+inline QColor colormapColor(float norm, HighPerfTableModel::ColorMapType cmap) {
+    return getColormapColor(toCorrelationBarColorMapType(cmap), norm);
+}
 
-} // namespace TableDataUtils
+}

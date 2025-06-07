@@ -10,6 +10,7 @@
 #include <limits>
 #include <QColor>
 #include <cmath>
+#include "CorrelationBarDelegate.h" 
 
 static QColor getContrastingTextColor(const QColor& bg) {
     double luminance = 0.299 * bg.red() + 0.587 * bg.green() + 0.114 * bg.blue();
@@ -32,27 +33,16 @@ QColor getNumericCellColor(double value, double minVal, double maxVal) {
     return QColor(r, g, b);
 }
 
-namespace TableDataUtils {
-
-QColor colormapColor(float norm, HighPerfTableModel::ColorMapType cmap) {
-    norm = std::clamp(norm, 0.0f, 1.0f);
-    switch (cmap) {
-    case HighPerfTableModel::ColorMapType::Viridis: {
-        float r = std::clamp(255.0f * std::min(std::max(0.0f, 0.267f + norm * (0.993f - 0.267f)), 1.0f), 0.0f, 255.0f);
-        float g = std::clamp(255.0f * std::min(std::max(0.0f, 0.004f + norm * (0.906f - 0.004f)), 1.0f), 0.0f, 255.0f);
-        float b = std::clamp(255.0f * std::min(std::max(0.0f, 0.329f + norm * (0.984f - 0.329f)), 1.0f), 0.0f, 255.0f);
-        return QColor((int)r, (int)g, (int)b);
-    }
-    case HighPerfTableModel::ColorMapType::Jet: {
-        float r = std::clamp(1.5f - std::abs(4.0f * norm - 3.0f), 0.0f, 1.0f);
-        float g = std::clamp(1.5f - std::abs(4.0f * norm - 2.0f), 0.0f, 1.0f);
-        float b = std::clamp(1.5f - std::abs(4.0f * norm - 1.0f), 0.0f, 1.0f);
-        return QColor((int)(r * 255), (int)(g * 255), (int)(b * 255));
-    }
-    default:
-        return Qt::white;
+CorrelationBarDelegate::ColorMapType toCorrelationBarColorMapType(HighPerfTableModel::ColorMapType type) {
+    switch (type) {
+        case HighPerfTableModel::ColorMapType::Viridis:
+            return CorrelationBarDelegate::ColorMapType::Viridis;
+        default:
+            return CorrelationBarDelegate::ColorMapType::Viridis;
     }
 }
+
+namespace TableDataUtils {
 
 } // namespace TableDataUtils
 

@@ -1,5 +1,5 @@
-#pragma once
+﻿#pragma once
 #include <QColor>
 #include "CorrelationBarDelegate.h"
 
-QColor getColormapColor(CorrelationBarDelegate::ColorMapType type, float norm);
+QColor getColormapColor(CorrelationBarDelegate::ColorMapType cmap, float norm);

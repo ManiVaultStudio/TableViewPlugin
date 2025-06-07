@@ -1,20 +1,38 @@
-#include "ColorMapUtils.h"
+﻿#include "ColorMapUtils.h"
+#include "CorrelationBarDelegate.h"
 #include <algorithm>
 #include <cmath>
 
 static QColor lerp(const QColor& a, const QColor& b, float t) {
     return QColor(
-        a.red()   + (b.red()   - a.red())   * t,
+        a.red() + (b.red() - a.red()) * t,
         a.green() + (b.green() - a.green()) * t,
-        a.blue()  + (b.blue()  - a.blue())  * t
+        a.blue() + (b.blue() - a.blue()) * t
     );
+}
+
+static const QColor viridis_stops[] = {
+    QColor(68, 1, 84),
+    QColor(59, 82, 139),
+    QColor(33, 145, 140),
+    QColor(94, 201, 98),
+    QColor(253, 231, 37)
+};
+
+static QColor lerpMulti(const QColor stops[], int count, float t) {
+    if (t <= 0.0f) return stops[0];
+    if (t >= 1.0f) return stops[count - 1];
+    float scaled = t * (count - 1);
+    int idx = static_cast<int>(scaled);
+    float localT = scaled - idx;
+    return lerp(stops[idx], stops[idx + 1], localT);
 }
 
 QColor getColormapColor(CorrelationBarDelegate::ColorMapType type, float norm) {
     norm = std::clamp(norm, 0.0f, 1.0f);
     switch (type) {
     case CorrelationBarDelegate::ColorMapType::Viridis:
-        return lerp(QColor(68,1,84), QColor(253,231,37), norm);
+        return lerpMulti(viridis_stops, 5, norm);
     case CorrelationBarDelegate::ColorMapType::Magma:
         return lerp(QColor(0,0,3), QColor(251,252,191), norm);
     case CorrelationBarDelegate::ColorMapType::Plasma:

@@ -1,5 +1,6 @@
 #include "HighPerfTableModel.h"
 #include "FastTableData.h"
+#include "TableDataUtils.h"
 #include <algorithm>
 
 HighPerfTableModel::HighPerfTableModel(QObject* parent)
@@ -62,6 +63,19 @@ QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
         }
     }
     if (role == Qt::BackgroundRole) {
+        if (isNumericalColumn(col) && !_showBars) {
+            // Only apply colormap to numeric, non-bar columns
+            const auto& val = _data.get(row, col);
+            if (std::holds_alternative<double>(val)) {
+                float fval = static_cast<float>(std::get<double>(val));
+                return colorForValue(col, fval);
+            }
+            if (std::holds_alternative<int>(val)) {
+                float fval = static_cast<float>(std::get<int>(val));
+                return colorForValue(col, fval);
+            }
+        }
+
         QColor color = _data.cellColor(row, col);
         if (color.isValid())
             return color;
@@ -71,7 +85,6 @@ QVariant HighPerfTableModel::data(const QModelIndex& index, int role) const {
             return QColor();
         }
         // if contains numeric but not bars
-
 
         return _data.rowBarColor(index.row());
     }
@@ -212,4 +225,24 @@ void HighPerfTableModel::setDefaultClusterBackgroundColor(const QColor& color)
 QColor HighPerfTableModel::defaultClusterBackgroundColor() const
 {
     return m_defaultClusterBgColor;
+}
+
+void HighPerfTableModel::setColumnColorMap(int col, ColorMapType cmap) {
+    m_columnColorMaps[col] = cmap;
+    emit dataChanged(index(0, col), index(rowCount() - 1, col), {Qt::BackgroundRole});
+}
+
+HighPerfTableModel::ColorMapType HighPerfTableModel::columnColorMap(int col) const {
+    auto it = m_columnColorMaps.find(col);
+    if (it != m_columnColorMaps.end())
+        return it->second;
+    return ColorMapType::Viridis;
+}
+
+QColor HighPerfTableModel::colorForValue(int col, float value) const {
+    float minVal, maxVal;
+    getColumnMinMax(col, minVal, maxVal);
+    if (maxVal == minVal) return Qt::white;
+    float norm = (value - minVal) / (maxVal - minVal);
+    return TableDataUtils::colormapColor(norm, columnColorMap(col));
 }

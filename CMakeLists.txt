@@ -47,6 +47,7 @@ set(PLUGIN_SOURCES
 	src/TableDataUtils.h
     src/SettingsAction.cpp
     src/SettingsAction.h
+    src/ColorMapUtils.h
     PluginInfo.json
 )
 

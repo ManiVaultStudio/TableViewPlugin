@@ -9,6 +9,7 @@
 #include "HighPerfTableView.h"
 #include <limits>
 #include <QColor>
+#include <cmath>
 
 // Utility function to get contrasting text color (black or white) for a given background color
 static QColor getContrastingTextColor(const QColor& bg) {
@@ -36,6 +37,34 @@ QColor getNumericCellColor(double value, double minVal, double maxVal) {
     }
     return QColor(r, g, b);
 }
+
+namespace TableDataUtils {
+
+QColor colormapColor(float norm, HighPerfTableModel::ColorMapType cmap) {
+    norm = std::clamp(norm, 0.0f, 1.0f);
+    switch (cmap) {
+    case HighPerfTableModel::ColorMapType::Viridis: {
+        // Simple Viridis approximation
+        // (for production, use a more accurate table or algorithm)
+        float r = std::clamp(255.0f * std::min(std::max(0.0f, 0.267f + norm * (0.993f - 0.267f)), 1.0f), 0.0f, 255.0f);
+        float g = std::clamp(255.0f * std::min(std::max(0.0f, 0.004f + norm * (0.906f - 0.004f)), 1.0f), 0.0f, 255.0f);
+        float b = std::clamp(255.0f * std::min(std::max(0.0f, 0.329f + norm * (0.984f - 0.329f)), 1.0f), 0.0f, 255.0f);
+        return QColor((int)r, (int)g, (int)b);
+    }
+    case HighPerfTableModel::ColorMapType::Jet: {
+        // Jet colormap
+        float r = std::clamp(1.5f - std::abs(4.0f * norm - 3.0f), 0.0f, 1.0f);
+        float g = std::clamp(1.5f - std::abs(4.0f * norm - 2.0f), 0.0f, 1.0f);
+        float b = std::clamp(1.5f - std::abs(4.0f * norm - 1.0f), 0.0f, 1.0f);
+        return QColor((int)(r * 255), (int)(g * 255), (int)(b * 255));
+    }
+    // Add more colormaps as needed
+    default:
+        return Qt::white;
+    }
+}
+
+} // namespace TableDataUtils
 
 FastTableData createTableFromVariantMap(const QVariantMap& map) {
 

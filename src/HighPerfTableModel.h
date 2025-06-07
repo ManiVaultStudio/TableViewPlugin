@@ -2,6 +2,8 @@
 
 #include <QAbstractTableModel>
 #include <QColor>
+#include <functional>
+#include <map>
 #include "FastTableData.h"
 
 /**
@@ -41,8 +43,25 @@ public:
     void setDefaultClusterBackgroundColor(const QColor& color);
     QColor defaultClusterBackgroundColor() const;
 
+    // Colormap options
+    enum class ColorMapType {
+        Viridis,
+        Jet,
+        // Add more colormaps as needed
+    };
+
+    // Set colormap for a column (optional, default is Viridis)
+    void setColumnColorMap(int col, ColorMapType cmap);
+    ColorMapType columnColorMap(int col) const;
+
 private:
     FastTableData _data;
     bool _showBars = false;
     QColor m_defaultClusterBgColor = Qt::white;
+
+    // Per-column colormap selection
+    std::map<int, ColorMapType> m_columnColorMaps;
+
+    // Utility: get color for a value in a column using the colormap
+    QColor colorForValue(int col, float value) const;
 };

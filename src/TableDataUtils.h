@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include "FastTableData.h"
+#include "HighPerfTableModel.h"
 
 /**
  * Creates a FastTableData from a QVariantMap and applies clusterColorMap to color cluster cells.
@@ -64,3 +65,15 @@ FastTableData createVariantMapFromDatasetData(
  * @return QColor representing the background color for the cell.
  */
 QColor getNumericCellColor(double value, double minVal, double maxVal);
+
+namespace TableDataUtils {
+
+/**
+ * Map normalized value [0,1] to QColor using the specified colormap.
+ * @param norm The normalized value in the range [0,1].
+ * @param cmap The colormap type to use for mapping.
+ * @return QColor representing the mapped color.
+ */
+QColor colormapColor(float norm, HighPerfTableModel::ColorMapType cmap);
+
+} // namespace TableDataUtils

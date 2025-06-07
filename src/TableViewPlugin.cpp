@@ -152,7 +152,7 @@ void TableViewPlugin::modifyandSetNewPointData()
         int numOfRows = _points->getNumPoints();
         std::vector<QString> columnNames = _points->getDimensionNames();
         std::vector<int> columnIndices;
-        
+
         for (int i = 0; i < numOfDims; ++i) {
             columnIndices.push_back(i);
         }
@@ -162,8 +162,9 @@ void TableViewPlugin::modifyandSetNewPointData()
         auto children = _points->getChildren();
         std::vector<std::vector<QString>> clusterDataset;
         std::vector<QString> clusterColumnNames;
-        std::vector<std::map<QString, QString>> clusterColorMap; 
+        std::vector<std::map<QString, QString>> clusterColorMap;
 
+        // --- Cluster columns logic unchanged ---
         for (const Dataset<Clusters>& child : children) {
             if (child->getDataType() == ClusterType) {
                 std::vector<QString> clusterInfo(numOfRows, QString());
@@ -171,13 +172,11 @@ void TableViewPlugin::modifyandSetNewPointData()
                 clusterColumnNames.push_back(child->getGuiName());
                 auto clusterValues = child->getClusters();
 
-                // --- Ensure consistent color mapping for each cluster label in this column ---
                 for (const auto& clusterValue : clusterValues) {
                     auto clusterName = clusterValue.getName();
                     auto clusterIndices = clusterValue.getIndices();
                     QString clusterColor = clusterValue.getColor().name();
 
-                    // Only set color if not already set for this label in this column
                     if (!clusterName.isEmpty() && !clusterColor.isEmpty()) {
                         if (colorMapForThisColumn.find(clusterName) == colorMapForThisColumn.end()) {
                             colorMapForThisColumn[clusterName] = clusterColor;
@@ -203,13 +202,62 @@ void TableViewPlugin::modifyandSetNewPointData()
                 clusterDatasetRows[r][c] = clusterDataset[c][r];
             }
         }
-       
-        QColor bgColor = _settingsAction.getTableViewAction()->currentTableBackgroundColor();
+
+        // --- Merge childXData columns into xData ---
+        for (const Dataset<Points>& child : children)
+        {
+            if (child->getDataType() == PointType) {
+                qDebug() << "[modifyandSetPointData] Found child dataset of type PointType:" << child->getGuiName();
+                // Append columns for child dataset
+                auto childColumnNames = child->getDimensionNames();
+                int childNumOfDims = child->getNumDimensions();
+                int childNumOfRows = child->getNumPoints();
+                std::vector<int> childColumnIndices;
+                for (int i = 0; i < childNumOfDims; ++i) {
+                    childColumnIndices.push_back(i);
+                }
+                std::vector<float> childXData(childNumOfRows * childNumOfDims);
+                child->populateDataForDimensions(childXData, childColumnIndices);
+
+                // Only merge if row counts match
+                if (childNumOfRows == numOfRows && childNumOfDims > 0) {
+                    // For each child column, append its values to xData column-wise
+                    // xData is row-major: [row0col0, row0col1, ..., row1col0, ...]
+                    // We need to expand xData to have more columns, preserving row order
+
+                    int oldNumCols = numOfDims;
+                    int newNumCols = numOfDims + childNumOfDims;
+                    std::vector<float> mergedXData(numOfRows * newNumCols);
+
+                    // Copy original xData
+                    for (int row = 0; row < numOfRows; ++row) {
+                        for (int col = 0; col < numOfDims; ++col) {
+                            mergedXData[row * newNumCols + col] = xData[row * numOfDims + col];
+                        }
+                    }
+                    // Copy childXData
+                    for (int row = 0; row < numOfRows; ++row) {
+                        for (int col = 0; col < childNumOfDims; ++col) {
+                            mergedXData[row * newNumCols + (numOfDims + col)] = childXData[row * childNumOfDims + col];
+                        }
+                    }
+                    // Update xData and columnNames
+                    xData = std::move(mergedXData);
+                    columnNames.insert(columnNames.end(), childColumnNames.begin(), childColumnNames.end());
+                    numOfDims = newNumCols;
+                }
+            }
+        }
+
         FastTableData fastData = createTableFromDatasetData(
             xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames);
         _settingsAction.getTableViewAction()->setData(fastData);
+
+        // --- Remove addNumericalColumns, as columns are now merged into xData ---
+
         qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
-    } else {
+    }
+    else {
         qDebug() << "[modifyandSetPointData] No valid points dataset, clearing table.";
         _settingsAction.getTableViewAction()->setData(FastTableData());
     }

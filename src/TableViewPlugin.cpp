@@ -162,7 +162,7 @@ void TableViewPlugin::modifyandSetNewPointData()
         auto children = _points->getChildren();
         std::vector<std::vector<QString>> clusterDataset;
         std::vector<QString> clusterColumnNames;
-        std::vector<std::map<QString, QString>> clusterColorMap; // Vector of maps: one per cluster column
+        std::vector<std::map<QString, QString>> clusterColorMap; 
 
         for (const Dataset<Clusters>& child : children) {
             if (child->getDataType() == ClusterType) {
@@ -170,14 +170,18 @@ void TableViewPlugin::modifyandSetNewPointData()
                 std::map<QString, QString> colorMapForThisColumn;
                 clusterColumnNames.push_back(child->getGuiName());
                 auto clusterValues = child->getClusters();
+
+                // --- Ensure consistent color mapping for each cluster label in this column ---
                 for (const auto& clusterValue : clusterValues) {
                     auto clusterName = clusterValue.getName();
                     auto clusterIndices = clusterValue.getIndices();
-                    QString clusterColor = clusterValue.getColor().name(); 
-                    
-                    // Map cluster label to color for this column
+                    QString clusterColor = clusterValue.getColor().name();
+
+                    // Only set color if not already set for this label in this column
                     if (!clusterName.isEmpty() && !clusterColor.isEmpty()) {
-                        colorMapForThisColumn[clusterName] = clusterColor;
+                        if (colorMapForThisColumn.find(clusterName) == colorMapForThisColumn.end()) {
+                            colorMapForThisColumn[clusterName] = clusterColor;
+                        }
                     }
 
                     for (const auto& index : clusterIndices) {
@@ -186,7 +190,7 @@ void TableViewPlugin::modifyandSetNewPointData()
                         }
                     }
                 }
-                clusterDataset.push_back(clusterInfo); 
+                clusterDataset.push_back(clusterInfo);
                 clusterColorMap.push_back(colorMapForThisColumn);
             }
         }

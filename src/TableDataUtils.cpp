@@ -183,31 +183,32 @@ FastTableData createTableFromDatasetData(
                     table.set(r, colIdx, QString());
             }
         }
-       
-        // Use per-column color map
+
+        // --- Ensure consistent color assignment for each cluster label in a column ---
         for (int c = 0; c < clusterDataColumns; ++c) {
             int colIdx = (pointColumnNames.size() > 0 ? pointColumnNames.size() : 0) + c;
             const std::map<QString, QString>* colorMapPtr = nullptr;
             if (c < static_cast<int>(clusterColorMap.size())) {
                 colorMapPtr = &clusterColorMap[c];
             }
+            // Build a cache to ensure same label always gets same color in this column
+            std::map<QString, QColor> labelColorCache;
+            if (colorMapPtr) {
+                for (const auto& pair : *colorMapPtr) {
+                    QColor color(pair.second);
+                    if (color.isValid()) {
+                        labelColorCache[pair.first] = color;
+                    }
+                }
+            }
             for (int r = 0; r < numOfRows; ++r) {
                 if (static_cast<size_t>(c) < clusterDataset[r].size()) {
                     const QString& clusterLabel = clusterDataset[r][c];
-                    if (colorMapPtr) {
-                        auto it = colorMapPtr->find(clusterLabel);
-                        if (it != colorMapPtr->end()) {
-                            QColor color(it->second);
-                            if (!color.isValid()) {
-                                continue; // skip invalid color
-                            }
-                            table.setCellColor(r, colIdx, color);
-                            QColor bgColor = color.isValid() ? color : defaultBgColor;
-                            table.setCellTextColor(r, colIdx, getContrastingTextColor(bgColor));
-                        } else {
-                            // If no color mapping, use default background color for contrast
-                            table.setCellTextColor(r, colIdx, getContrastingTextColor(defaultBgColor));
-                        }
+                    auto it = labelColorCache.find(clusterLabel);
+                    if (it != labelColorCache.end()) {
+                        table.setCellColor(r, colIdx, it->second);
+                        QColor bgColor = it->second.isValid() ? it->second : defaultBgColor;
+                        table.setCellTextColor(r, colIdx, getContrastingTextColor(bgColor));
                     } else {
                         table.setCellTextColor(r, colIdx, getContrastingTextColor(defaultBgColor));
                     }

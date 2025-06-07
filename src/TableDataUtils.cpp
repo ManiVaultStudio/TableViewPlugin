@@ -17,12 +17,8 @@ static QColor getContrastingTextColor(const QColor& bg) {
     return (luminance > 186) ? QColor(Qt::black) : QColor(Qt::white);
 }
 
-// Overload: Use default background color if not provided
-FastTableData createTableFromVariantMap(const QVariantMap& map) {
-    return createTableFromVariantMap(map, Qt::white);
-}
 
-FastTableData createTableFromVariantMap(const QVariantMap& map, const QColor& defaultBgColor) {
+FastTableData createTableFromVariantMap(const QVariantMap& map) {
 
     std::map<QString, QString> clusterColorMap;
     QVariantMap mapCopy = map;
@@ -103,11 +99,11 @@ FastTableData createTableFromVariantMap(const QVariantMap& map, const QColor& de
                     }
                     table.setCellColor(r, c, color);
                     // Use the actual cell background color if set, otherwise fallback to defaultBgColor
-                    QColor bgColor = color.isValid() ? color : defaultBgColor;
+                    QColor bgColor = color.isValid() ? color : QColor();
                     table.setCellTextColor(r, c, getContrastingTextColor(bgColor));
                 } else {
                     // If no color mapping, use default background color for contrast
-                    table.setCellTextColor(r, c, getContrastingTextColor(defaultBgColor));
+                    table.setCellTextColor(r, c, getContrastingTextColor(QColor()));
                 }
             }
         }
@@ -116,16 +112,6 @@ FastTableData createTableFromVariantMap(const QVariantMap& map, const QColor& de
     return table;
 }
 
-FastTableData createTableFromDatasetData(
-    const std::vector<float>& pointDataset,
-    int numOfRows,
-    std::vector<QString> pointColumnNames,
-    const std::vector<std::vector<QString>>& clusterDataset,
-    const std::vector<QString>& clusterColumnNames,
-    const std::vector<std::map<QString, QString>>& clusterColorMap)
-{
-    return createTableFromDatasetData(pointDataset, numOfRows, pointColumnNames, clusterDataset, clusterColumnNames, clusterColorMap, Qt::white);
-}
 
 FastTableData createTableFromDatasetData(
     const std::vector<float>& pointDataset,
@@ -133,8 +119,7 @@ FastTableData createTableFromDatasetData(
     std::vector<QString> pointColumnNames,
     const std::vector<std::vector<QString>>& clusterDataset,
     const std::vector<QString>& clusterColumnNames,
-    const std::vector<std::map<QString, QString>>& clusterColorMap,
-    const QColor& defaultBgColor)
+    const std::vector<std::map<QString, QString>>& clusterColorMap)
 {
     if ((pointDataset.empty() || pointColumnNames.size() <= 0) && clusterDataset.empty())
         return FastTableData();
@@ -207,10 +192,10 @@ FastTableData createTableFromDatasetData(
                     auto it = labelColorCache.find(clusterLabel);
                     if (it != labelColorCache.end()) {
                         table.setCellColor(r, colIdx, it->second);
-                        QColor bgColor = it->second.isValid() ? it->second : defaultBgColor;
+                        QColor bgColor = it->second.isValid() ? it->second : QColor();
                         table.setCellTextColor(r, colIdx, getContrastingTextColor(bgColor));
                     } else {
-                        table.setCellTextColor(r, colIdx, getContrastingTextColor(defaultBgColor));
+                        table.setCellTextColor(r, colIdx, getContrastingTextColor(QColor()));
                     }
                 }
             }
@@ -235,18 +220,6 @@ FastTableData createVariantMapFromDatasetData(
     const std::vector<std::vector<QString>>& clusterDataset,
     const std::vector<QString>& clusterColumnNames,
     const std::vector<std::map<QString, QString>>& clusterColorMap)
-{
-    return createVariantMapFromDatasetData(pointDataset, numOfRows, pointColumnNames, clusterDataset, clusterColumnNames, clusterColorMap, Qt::white);
-}
-
-FastTableData createVariantMapFromDatasetData(
-    const std::vector<float>& pointDataset,
-    int numOfRows,
-    const std::vector<QString>& pointColumnNames,
-    const std::vector<std::vector<QString>>& clusterDataset,
-    const std::vector<QString>& clusterColumnNames,
-    const std::vector<std::map<QString, QString>>& clusterColorMap,
-    const QColor& defaultBgColor)
 {
     QVariantMap map;
     int numOfDims = static_cast<int>(pointColumnNames.size());
@@ -292,5 +265,5 @@ FastTableData createVariantMapFromDatasetData(
         }
     }
 
-    return createTableFromVariantMap(map, defaultBgColor);
+    return createTableFromVariantMap(map);
 }

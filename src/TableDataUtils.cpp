@@ -68,19 +68,39 @@ QColor colormapColor(float norm, HighPerfTableModel::ColorMapType cmap) {
 
 FastTableData createTableFromVariantMap(const QVariantMap& map) {
 
-    std::map<QString, QString> clusterColorMap;
+    // --- Updated logic to match createTableFromDatasetData more closely ---
+
+    // 1. Gather all cluster color maps (support multiple cluster columns)
+    std::vector<std::map<QString, QString>> clusterColorMaps;
     QVariantMap mapCopy = map;
+    int clusterColorMapIdx = 0;
+    while (true) {
+        QString key = QString("__clusterColorMap_%1").arg(clusterColorMapIdx);
+        if (!mapCopy.contains(key))
+            break;
+        QVariant colorMapVar = mapCopy.take(key);
+        QVariantMap colorMapQVar = colorMapVar.toMap();
+        std::map<QString, QString> colorMap;
+        for (auto it = colorMapQVar.begin(); it != colorMapQVar.end(); ++it) {
+            colorMap[it.key()] = it.value().toString();
+        }
+        clusterColorMaps.push_back(colorMap);
+        ++clusterColorMapIdx;
+    }
+    // Fallback: legacy single color map
+    std::map<QString, QString> legacyClusterColorMap;
     if (mapCopy.contains("__clusterColorMap")) {
         QVariant colorMapVar = mapCopy.take("__clusterColorMap");
         QVariantMap colorMapQVar = colorMapVar.toMap();
         for (auto it = colorMapQVar.begin(); it != colorMapQVar.end(); ++it) {
-            clusterColorMap[it.key()] = it.value().toString();
+            legacyClusterColorMap[it.key()] = it.value().toString();
         }
     }
 
     if (mapCopy.isEmpty())
         return FastTableData();
 
+    // 2. Extract columns and determine types
     QStringList colNames = mapCopy.keys();
     int cols = colNames.size();
     int rows = -1;
@@ -100,43 +120,45 @@ FastTableData createTableFromVariantMap(const QVariantMap& map) {
     }
 
     FastTableData table(rows, cols);
+
+    // 3. Set column names and types, and fill data
+    std::vector<bool> isNumericCol(cols, true);
+    std::vector<double> minVals(cols, std::numeric_limits<double>::max());
+    std::vector<double> maxVals(cols, std::numeric_limits<double>::lowest());
+
     for (int c = 0; c < cols; ++c) {
         table.setColumnName(c, colNames[c]);
-        bool isNumeric = true;
-        double minVal = std::numeric_limits<double>::max();
-        double maxVal = std::numeric_limits<double>::lowest();
         for (int r = 0; r < rows; ++r) {
             const QVariant& v = columns[c][r];
             FastTableData::Value val;
             if (v.canConvert<double>()) {
                 val = v.toDouble();
                 double d = v.toDouble();
-                minVal = std::min(minVal, d);
-                maxVal = std::max(maxVal, d);
+                minVals[c] = std::min(minVals[c], d);
+                maxVals[c] = std::max(maxVals[c], d);
             } else if (v.canConvert<int>()) {
                 val = v.toInt();
                 double d = v.toInt();
-                minVal = std::min(minVal, d);
-                maxVal = std::max(maxVal, d);
+                minVals[c] = std::min(minVals[c], d);
+                maxVals[c] = std::max(maxVals[c], d);
             } else if (v.canConvert<QString>()) {
                 val = v.toString();
-                isNumeric = false;
+                isNumericCol[c] = false;
             } else {
                 val = QString();
-                isNumeric = false;
+                isNumericCol[c] = false;
             }
             table.set(r, c, val);
         }
-        table.setColumnIsNumeric(c, isNumeric);
-        if (isNumeric)
-            table.setColumnMinMax(c, minVal, maxVal);
+        table.setColumnIsNumeric(c, isNumericCol[c]);
+        if (isNumericCol[c])
+            table.setColumnMinMax(c, minVals[c], maxVals[c]);
     }
 
-    // Set cell colors for numeric columns (non-bar, non-cluster)
+    // 4. Set cell colors for numeric columns
     for (int c = 0; c < cols; ++c) {
-        if (table.columnIsNumeric(c)) {
-            double minVal, maxVal;
-            table.getColumnMinMax(c, minVal, maxVal);
+        if (isNumericCol[c]) {
+            double minVal = minVals[c], maxVal = maxVals[c];
             for (int r = 0; r < rows; ++r) {
                 QVariant v = columns[c][r];
                 double d = v.toDouble();
@@ -147,25 +169,34 @@ FastTableData createTableFromVariantMap(const QVariantMap& map) {
         }
     }
 
-    // Fix: Validate color string before using QColor, skip invalid colors
+    // 5. Set cell colors for cluster columns (non-numeric)
     for (int c = 0; c < cols; ++c) {
-        if (!table.columnIsNumeric(c)) {
+        if (!isNumericCol[c]) {
+            // Use per-column color map if available, else fallback to legacy
+            const std::map<QString, QString>* colorMapPtr = nullptr;
+            if (c < static_cast<int>(clusterColorMaps.size()))
+                colorMapPtr = &clusterColorMaps[c];
+            else if (!legacyClusterColorMap.empty())
+                colorMapPtr = &legacyClusterColorMap;
+
+            std::map<QString, QColor> labelColorCache;
+            if (colorMapPtr) {
+                for (const auto& pair : *colorMapPtr) {
+                    QColor color(pair.second);
+                    if (color.isValid()) {
+                        labelColorCache[pair.first] = color;
+                    }
+                }
+            }
             for (int r = 0; r < rows; ++r) {
                 QVariant v = columns[c][r];
                 QString label = v.toString();
-                auto it = clusterColorMap.find(label);
-                if (it != clusterColorMap.end()) {
-                    QColor color(it->second);
-                    if (!color.isValid()) {
-                        // Optionally: qWarning("Invalid color string for label '%s': '%s'", qPrintable(label), qPrintable(it->second));
-                        continue; // skip invalid color
-                    }
-                    table.setCellColor(r, c, color);
-                    // Use the actual cell background color if set, otherwise fallback to defaultBgColor
-                    QColor bgColor = color.isValid() ? color : QColor();
+                auto it = labelColorCache.find(label);
+                if (it != labelColorCache.end()) {
+                    table.setCellColor(r, c, it->second);
+                    QColor bgColor = it->second.isValid() ? it->second : QColor();
                     table.setCellTextColor(r, c, getContrastingTextColor(bgColor));
                 } else {
-                    // If no color mapping, use default background color for contrast
                     table.setCellTextColor(r, c, getContrastingTextColor(QColor()));
                 }
             }
@@ -174,7 +205,6 @@ FastTableData createTableFromVariantMap(const QVariantMap& map) {
 
     return table;
 }
-
 
 FastTableData createTableFromDatasetData(
     const std::vector<float>& pointDataset,
@@ -295,6 +325,7 @@ FastTableData createVariantMapFromDatasetData(
     QVariantMap map;
     int numOfDims = static_cast<int>(pointColumnNames.size());
 
+    // 1. Add numeric columns
     if (!pointDataset.empty() && numOfDims > 0 && numOfRows > 0) {
         for (int c = 0; c < numOfDims; ++c) {
             QVariantList col;
@@ -309,6 +340,7 @@ FastTableData createVariantMapFromDatasetData(
         }
     }
 
+    // 2. Add cluster columns
     int clusterDataColumns = (!clusterDataset.empty() && !clusterDataset[0].empty()) ? static_cast<int>(clusterDataset[0].size()) : 0;
     for (int c = 0; c < clusterDataColumns; ++c) {
         QVariantList col;
@@ -319,14 +351,14 @@ FastTableData createVariantMapFromDatasetData(
             else
                 col.append(QString());
         }
-        QString colName = (c < static_cast<int>(clusterColumnNames.size()))
+        QString colName = (c < static_cast<int>(clusterColumnNames.size()) && !clusterColumnNames[c].isEmpty())
             ? clusterColumnNames[c]
             : QString("Cluster %1").arg(c + 1);
         map.insert(colName, col);
     }
 
+    // 3. Add cluster color maps (one per cluster column, if available)
     if (!clusterColorMap.empty()) {
-        QVariantMap colorMapQVar;
         for (int c = 0; c < static_cast<int>(clusterColorMap.size()); ++c) {
             QVariantMap columnColorMap;
             for (const auto& pair : clusterColorMap[c]) {
@@ -336,5 +368,6 @@ FastTableData createVariantMapFromDatasetData(
         }
     }
 
+    // 4. Call createTableFromVariantMap to build the FastTableData
     return createTableFromVariantMap(map);
 }

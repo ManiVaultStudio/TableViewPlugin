@@ -48,6 +48,11 @@ void TableViewPlugin::init()
 {
     auto layout = new QVBoxLayout();
     layout->setContentsMargins(0, 0, 0, 0);
+    auto settings = new QHBoxLayout();
+    settings->setContentsMargins(0, 0, 0, 0);
+    settings->setSpacing(0);
+    settings->addWidget(_settingsAction.getDatasetOptionsHolder().createWidget(&getWidget()));
+    layout->addLayout(settings);
     layout->addWidget(_settingsAction.getTableViewAction());
     layout->addWidget(_currentDatasetNameLabel);
     getWidget().setLayout(layout);

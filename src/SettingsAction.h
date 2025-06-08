@@ -52,7 +52,7 @@ namespace mv
 class SettingsAction : public WidgetAction
 {
 public:
-    class DatasetOptionsHolder : public VerticalGroupAction
+    class DatasetOptionsHolder : public HorizontalGroupAction
     {
     public:
         DatasetOptionsHolder(SettingsAction& settingsAction);

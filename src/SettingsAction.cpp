@@ -41,7 +41,7 @@ SettingsAction::SettingsAction(TableViewPlugin& TableViewPlugin) :
 }
 
 inline SettingsAction::DatasetOptionsHolder::DatasetOptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Dataset Options"),
+    HorizontalGroupAction(&settingsAction, "Dataset Options"),
     _settingsOptions(settingsAction),
     _pointDatasetAction(this, "Point dataset"),
     _tableDataVariant(this, "Table Data Variant")

@@ -203,11 +203,27 @@ void HighPerfTableModel::addColumn(const QString& name, const FastTableData::Val
     endResetModel();
 }
 
+void HighPerfTableModel::addColumns(const std::vector<QString>& names, const FastTableData::Value& defaultValue) {
+    beginResetModel();
+    for (const auto& name : names) {
+        _data.addColumn(name, defaultValue);
+    }
+    endResetModel();
+}
+
 bool HighPerfTableModel::removeColumn(const QString& name) {
     beginResetModel();
     bool result = _data.removeColumn(name);
     endResetModel();
     return result;
+}
+
+void HighPerfTableModel::removeColumns(const std::vector<QString>& names) {
+    beginResetModel();
+    for (const auto& name : names) {
+        _data.removeColumn(name);
+    }
+    endResetModel();
 }
 
 void HighPerfTableModel::setDefaultClusterBackgroundColor(const QColor& color)
@@ -225,6 +241,10 @@ void HighPerfTableModel::setColumnColorMap(int col, ColorMapType cmap) {
     emit dataChanged(index(0, col), index(rowCount() - 1, col), {Qt::BackgroundRole});
 }
 
+void HighPerfTableModel::changeColorMap(int col, ColorMapType cmap) {
+    setColumnColorMap(col, cmap);
+}
+
 HighPerfTableModel::ColorMapType HighPerfTableModel::columnColorMap(int col) const {
     auto it = m_columnColorMaps.find(col);
     if (it != m_columnColorMaps.end())
@@ -238,4 +258,22 @@ QColor HighPerfTableModel::colorForValue(int col, float value) const {
     if (maxVal == minVal) return Qt::white;
     float norm = (value - minVal) / (maxVal - minVal);
     return TableDataUtils::colormapColor(norm, columnColorMap(col));
+}
+
+void HighPerfTableModel::changeColorMap(const QString& columnName, ColorMapType cmap) {
+    // Find the column index by name
+    for (int col = 0; col < _data.colCount(); ++col) {
+        if (_data.columnName(col) == columnName) {
+            setColumnColorMap(col, cmap);
+            break;
+        }
+    }
+}
+
+void HighPerfTableModel::changeAllNumericalColorMaps(ColorMapType cmap) {
+    for (int col = 0; col < _data.colCount(); ++col) {
+        if (_data.columnIsNumeric(col)) {
+            setColumnColorMap(col, cmap);
+        }
+    }
 }

@@ -29,12 +29,17 @@ public:
     void setShowBarsForNumericalColumns(bool enabled);
     void modifyandSetNewPointData();
 
+public:
+    void fromVariantMap(const QVariantMap& variantMap) override;
+    QVariantMap toVariantMap() const override;
+    
 protected:
     DropWidget*             _dropWidget;
     mv::Dataset<Points>     _points;
     QString                 _currentDatasetName;
     QLabel*                 _currentDatasetNameLabel;
-    HighPerfTableView*      _tableView = nullptr;
+    SettingsAction          _settingsAction;
+
 };
 
 class TableViewPluginFactory : public ViewPluginFactory

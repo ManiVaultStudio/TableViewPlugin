@@ -2,14 +2,37 @@
 
 #include <QAbstractTableModel>
 #include <QColor>
+#include <functional>
+#include <map>
 #include "FastTableData.h"
 
-/**
- * @brief HighPerfTableModel provides a Qt model for FastTableData, supporting bar/value toggle and sorting.
- */
+// HighPerfTableModel provides a Qt model for FastTableData, supporting bar/value toggle and sorting.
 class HighPerfTableModel : public QAbstractTableModel {
     Q_OBJECT
 public:
+
+    enum class ColorMapType {
+        BrBG,
+        BuPu,
+        GnBu,
+        Magma,
+        PiYG,
+        Plasma,
+        PuOr,
+        Q_BlGrRd,
+        Qualitative,
+        RdBu,
+        RdPu,
+        RdYlBu,
+        RdYlGn,
+        Reds,
+        Spectral,
+        Viridis,
+        YlGn,
+        YlGnBu,
+        YlOrBr,
+    };
+
     explicit HighPerfTableModel(QObject* parent = nullptr);
 
     void setData(const FastTableData& data);
@@ -36,8 +59,23 @@ public:
 
     void addColumn(const QString& name, const FastTableData::Value& defaultValue = FastTableData::Value{});
     bool removeColumn(const QString& name);
+    void addColumns(const std::vector<QString>& names, const FastTableData::Value& defaultValue = FastTableData::Value{});
+    void removeColumns(const std::vector<QString>& names);
+
+    void changeColorMap(int col, ColorMapType cmap);
+    void changeColorMap(const QString& columnName, ColorMapType cmap);
+    void changeAllNumericalColorMaps(ColorMapType cmap);
+
+    void setDefaultClusterBackgroundColor(const QColor& color);
+    QColor defaultClusterBackgroundColor() const;
+
+    void setColumnColorMap(int col, ColorMapType cmap);
+    ColorMapType columnColorMap(int col) const;
 
 private:
     FastTableData _data;
     bool _showBars = false;
+    QColor m_defaultClusterBgColor = Qt::white;
+    std::map<int, ColorMapType> m_columnColorMaps;
+    QColor colorForValue(int col, float value) const;
 };

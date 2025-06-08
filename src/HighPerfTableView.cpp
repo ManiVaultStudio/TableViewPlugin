@@ -299,3 +299,8 @@ bool HighPerfTableView::removeColumn(const QString& name) {
     }
     return false;
 }
+
+QColor HighPerfTableView::currentTableBackgroundColor() const
+{
+    return palette().color(QPalette::Base);
+}

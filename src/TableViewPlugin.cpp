@@ -19,7 +19,7 @@ TableViewPlugin::TableViewPlugin(const PluginFactory* factory) :
     _points(),
     _currentDatasetName(),
     _currentDatasetNameLabel(new QLabel()),
-    _tableView(new HighPerfTableView())
+    _settingsAction(*this)
 {
     _currentDatasetNameLabel->setAcceptDrops(true);
     _currentDatasetNameLabel->setAlignment(Qt::AlignCenter);
@@ -48,7 +48,12 @@ void TableViewPlugin::init()
 {
     auto layout = new QVBoxLayout();
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(_tableView);
+    auto settings = new QHBoxLayout();
+    settings->setContentsMargins(0, 0, 0, 0);
+    settings->setSpacing(0);
+    settings->addWidget(_settingsAction.getDatasetOptionsHolder().createWidget(&getWidget()));
+    layout->addLayout(settings);
+    layout->addWidget(_settingsAction.getTableViewAction());
     layout->addWidget(_currentDatasetNameLabel);
     getWidget().setLayout(layout);
 
@@ -90,10 +95,8 @@ void TableViewPlugin::init()
             if (dataType == PointType) {
                 const auto description = QString("Load %1 into table view").arg(datasetGuiName);
 
-               
                 if (_points.isValid() && candidateDataset.isValid() && _points == candidateDataset) {
                     qDebug() << "[DropWidget] Same dataset detected, drop not allowed.";
-                    
                     dropRegions << new DropWidget::DropRegion(
                         this,
                         "Drop not allowed",
@@ -104,16 +107,20 @@ void TableViewPlugin::init()
                 }
                 else {
                     dropRegions << new DropWidget::DropRegion(this, "Points", description, "map-marker-alt", true, [this, candidateDataset]() {
-                        qDebug() << "[DropWidget] Assigning new dataset to _points";
+                        
                         _points = candidateDataset;
                         qDebug() << "[DropWidget] _points.isValid() after assignment:" << _points.isValid();
-                        modifyandSetNewPointData();
+                        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentText("");
+                        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentIndex(-1);
+                        _settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentDataset(_points);
+                        //modifyandSetNewPointData();
 
                         if (_points.isValid()) {
                             auto newDatasetName = _points->getGuiName();
                             _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
                             _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
                         }
+                       
                     });
                 }
             }
@@ -122,10 +129,47 @@ void TableViewPlugin::init()
     });
 
     connect(&_points, &Dataset<Points>::guiNameChanged, this, [this]() {
+      
+
         auto newDatasetName = _points->getGuiName();
         _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
         _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
+        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentText("");
+        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentIndex(-1);
+        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentDataset(_points);
+
+ 
+    });
+
+
+    connect(&_points, &Dataset<Points>::dataChanged, this, [this]() {
+
+        if(_points.isValid())
+        { auto newDatasetName = _points->getGuiName();
+        _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
+        //_dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
+
         modifyandSetNewPointData();
+
+        qDebug() << "[dataChanged] Exiting. _isUpdatingPoints reset to false.";
+        }
+    });
+
+    connect(&_settingsAction.getDatasetOptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, [this]() {
+
+
+        if(_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
+        {
+            _points = _settingsAction.getDatasetOptionsHolder().getPointDatasetAction().getCurrentDataset();
+            mv::events().notifyDatasetDataChanged(_points);
+            qDebug() << "[currentIndexChanged] _points set to valid dataset.";
+        }
+        else
+        {
+            _points = Dataset<Points>();
+            qDebug() << "[currentIndexChanged] _points set to invalid dataset.";
+        }
+
     });
 
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
@@ -134,13 +178,13 @@ void TableViewPlugin::init()
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
     _eventListener.registerDataEventByType(PointType, std::bind(&TableViewPlugin::onDataEvent, this, std::placeholders::_1));
 
-    _tableView->setBarDelegateForNumericalColumns(true);
+    _settingsAction.getTableViewAction()->setBarDelegateForNumericalColumns(true);
 }
 
 void TableViewPlugin::setShowBarsForNumericalColumns(bool enabled)
 {
-    if (_tableView)
-        _tableView->setBarDelegateForNumericalColumns(enabled);
+    if (_settingsAction.getTableViewAction())
+        _settingsAction.getTableViewAction()->setBarDelegateForNumericalColumns(enabled);
 }
 
 void TableViewPlugin::modifyandSetNewPointData()
@@ -151,39 +195,47 @@ void TableViewPlugin::modifyandSetNewPointData()
         int numOfRows = _points->getNumPoints();
         std::vector<QString> columnNames = _points->getDimensionNames();
         std::vector<int> columnIndices;
-        
+
         for (int i = 0; i < numOfDims; ++i) {
             columnIndices.push_back(i);
         }
         std::vector<float> xData(numOfRows * numOfDims);
         _points->populateDataForDimensions(xData, columnIndices);
 
-       
         auto children = _points->getChildren();
         std::vector<std::vector<QString>> clusterDataset;
-        std::map<QString, QString> clusterColorMap;
         std::vector<QString> clusterColumnNames;
+        std::vector<std::map<QString, QString>> clusterColorMap;
+
         for (const Dataset<Clusters>& child : children) {
             if (child->getDataType() == ClusterType) {
                 std::vector<QString> clusterInfo(numOfRows, QString());
+                std::map<QString, QString> colorMapForThisColumn;
                 clusterColumnNames.push_back(child->getGuiName());
                 auto clusterValues = child->getClusters();
+
                 for (const auto& clusterValue : clusterValues) {
                     auto clusterName = clusterValue.getName();
                     auto clusterIndices = clusterValue.getIndices();
-                    QString clusterColor = clusterValue.getColor().name(); 
-                    clusterColorMap[clusterName] = clusterColor; 
+                    QString clusterColor = clusterValue.getColor().name();
+
+                    if (!clusterName.isEmpty() && !clusterColor.isEmpty()) {
+                        if (colorMapForThisColumn.find(clusterName) == colorMapForThisColumn.end()) {
+                            colorMapForThisColumn[clusterName] = clusterColor;
+                        }
+                    }
+
                     for (const auto& index : clusterIndices) {
                         if (index < numOfRows) {
                             clusterInfo[index] = clusterName;
                         }
                     }
                 }
-                clusterDataset.push_back(clusterInfo); 
+                clusterDataset.push_back(clusterInfo);
+                clusterColorMap.push_back(colorMapForThisColumn);
             }
         }
 
-        
         std::vector<std::vector<QString>> clusterDatasetRows(numOfRows);
         for (int r = 0; r < numOfRows; ++r) {
             clusterDatasetRows[r].resize(clusterDataset.size());
@@ -192,13 +244,51 @@ void TableViewPlugin::modifyandSetNewPointData()
             }
         }
 
+        for (const Dataset<Points>& child : children)
+        {
+            if (child->getDataType() == PointType) {
+                qDebug() << "[modifyandSetPointData] Found child dataset of type PointType:" << child->getGuiName();
+                auto childColumnNames = child->getDimensionNames();
+                int childNumOfDims = child->getNumDimensions();
+                int childNumOfRows = child->getNumPoints();
+                std::vector<int> childColumnIndices;
+                for (int i = 0; i < childNumOfDims; ++i) {
+                    childColumnIndices.push_back(i);
+                }
+                std::vector<float> childXData(childNumOfRows * childNumOfDims);
+                child->populateDataForDimensions(childXData, childColumnIndices);
 
-        FastTableData fastData = createTableFromDatasetData(xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames,clusterColorMap);
-        _tableView->setData(fastData);
+                if (childNumOfRows == numOfRows && childNumOfDims > 0) {
+                    int oldNumCols = numOfDims;
+                    int newNumCols = numOfDims + childNumOfDims;
+                    std::vector<float> mergedXData(numOfRows * newNumCols);
+
+                    for (int row = 0; row < numOfRows; ++row) {
+                        for (int col = 0; col < numOfDims; ++col) {
+                            mergedXData[row * newNumCols + col] = xData[row * numOfDims + col];
+                        }
+                    }
+                    for (int row = 0; row < numOfRows; ++row) {
+                        for (int col = 0; col < childNumOfDims; ++col) {
+                            mergedXData[row * newNumCols + (numOfDims + col)] = childXData[row * childNumOfDims + col];
+                        }
+                    }
+                    xData = std::move(mergedXData);
+                    columnNames.insert(columnNames.end(), childColumnNames.begin(), childColumnNames.end());
+                    numOfDims = newNumCols;
+                }
+            }
+        }
+
+        FastTableData fastData = createTableFromDatasetData(
+            xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames);
+        _settingsAction.getTableViewAction()->setData(fastData);
+
         qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
-    } else {
+    }
+    else {
         qDebug() << "[modifyandSetPointData] No valid points dataset, clearing table.";
-        _tableView->setData(FastTableData());
+        _settingsAction.getTableViewAction()->setData(FastTableData());
     }
 }
 
@@ -267,22 +357,20 @@ mv::DataTypes TableViewPluginFactory::supportedDataTypes() const
 mv::gui::PluginTriggerActions TableViewPluginFactory::getPluginTriggerActions(const mv::Datasets& datasets) const
 {
     PluginTriggerActions pluginTriggerActions;
-    /*
-    const auto getPluginInstance = [this]() -> TableViewPlugin* {
-        return dynamic_cast<TableViewPlugin*>(plugins().requestViewPlugin(getKind()));
-    };
-
-    const auto numberOfDatasets = datasets.count();
-
-    if (numberOfDatasets == 1) 
-    {
-        auto pluginTriggerAction = new PluginTriggerAction(const_cast<TableViewPluginFactory*>(this), this, "Table", "View table data", icon(), [this, getPluginInstance, datasets](PluginTriggerAction& pluginTriggerAction) -> void {
-            for (auto dataset : datasets)
-                getPluginInstance();
-        });
-
-        pluginTriggerActions << pluginTriggerAction;
-    }
-    */
     return pluginTriggerActions;
+}
+
+void TableViewPlugin::fromVariantMap(const QVariantMap& variantMap)
+{
+    ViewPlugin::fromVariantMap(variantMap);
+    mv::util::variantMapMustContain(variantMap, "TableViewPlugin:Settings");
+    _settingsAction.fromVariantMap(variantMap["TableViewPlugin:Settings"].toMap());
+}
+
+QVariantMap TableViewPlugin::toVariantMap() const
+{
+    QVariantMap variantMap = ViewPlugin::toVariantMap();
+
+    _settingsAction.insertIntoVariantMap(variantMap);
+    return variantMap;
 }

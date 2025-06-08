@@ -39,6 +39,7 @@ protected:
     QString                 _currentDatasetName;
     QLabel*                 _currentDatasetNameLabel;
     SettingsAction          _settingsAction;
+
 };
 
 class TableViewPluginFactory : public ViewPluginFactory

@@ -107,16 +107,20 @@ void TableViewPlugin::init()
                 }
                 else {
                     dropRegions << new DropWidget::DropRegion(this, "Points", description, "map-marker-alt", true, [this, candidateDataset]() {
-                        qDebug() << "[DropWidget] Assigning new dataset to _points";
+                        
                         _points = candidateDataset;
                         qDebug() << "[DropWidget] _points.isValid() after assignment:" << _points.isValid();
-                        modifyandSetNewPointData();
+                        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentText("");
+                        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentIndex(-1);
+                        _settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentDataset(_points);
+                        //modifyandSetNewPointData();
 
                         if (_points.isValid()) {
                             auto newDatasetName = _points->getGuiName();
                             _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
                             _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
                         }
+                       
                     });
                 }
             }
@@ -125,10 +129,47 @@ void TableViewPlugin::init()
     });
 
     connect(&_points, &Dataset<Points>::guiNameChanged, this, [this]() {
+      
+
         auto newDatasetName = _points->getGuiName();
         _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
         _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
+        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentText("");
+        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentIndex(-1);
+        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentDataset(_points);
+
+ 
+    });
+
+
+    connect(&_points, &Dataset<Points>::dataChanged, this, [this]() {
+
+        if(_points.isValid())
+        { auto newDatasetName = _points->getGuiName();
+        _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
+        //_dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
+
         modifyandSetNewPointData();
+
+        qDebug() << "[dataChanged] Exiting. _isUpdatingPoints reset to false.";
+        }
+    });
+
+    connect(&_settingsAction.getDatasetOptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, [this]() {
+
+
+        if(_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
+        {
+            _points = _settingsAction.getDatasetOptionsHolder().getPointDatasetAction().getCurrentDataset();
+            mv::events().notifyDatasetDataChanged(_points);
+            qDebug() << "[currentIndexChanged] _points set to valid dataset.";
+        }
+        else
+        {
+            _points = Dataset<Points>();
+            qDebug() << "[currentIndexChanged] _points set to invalid dataset.";
+        }
+
     });
 
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));

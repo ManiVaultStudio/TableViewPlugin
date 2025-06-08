@@ -35,14 +35,10 @@ void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem
                 return (luminance > 0.5) ? QColor(Qt::black) : QColor(Qt::white);
             };
 
-            QColor barColor = QColor(255, 140, 0);
-            const QAbstractItemModel* model = index.model();
-            if (model) {
-                QVariant rowColorVar = model->data(model->index(index.row(), 0), Qt::BackgroundRole);
-                if (rowColorVar.canConvert<QColor>()) {
-                    barColor = rowColorVar.value<QColor>();
-                }
-            }
+            // Set a constant color for all bars
+            QColor barColor = QColor(255, 140, 0); 
+
+            // Optionally, keep contrast check for accessibility
             if (!isColorContrastive(barColor, bgColor)) {
                 barColor = getContrastColor(bgColor);
             }

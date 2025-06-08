@@ -41,8 +41,25 @@ public:
     QColor defaultClusterBackgroundColor() const;
 
     enum class ColorMapType {
+        BrBG,
+        BuPu,
+        GnBu,
+        Magma,
+        PiYG,
+        Plasma,
+        PuOr,
+        Q_BlGrRd,
+        Qualitative,
+        RdBu,
+        RdPu,
+        RdYlBu,
+        RdYlGn,
+        Reds,
+        Spectral,
         Viridis,
-        Jet,
+        YlGn,
+        YlGnBu,
+        YlOrBr,
     };
 
     void setColumnColorMap(int col, ColorMapType cmap);

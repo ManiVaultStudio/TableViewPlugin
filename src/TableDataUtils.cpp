@@ -35,8 +35,44 @@ QColor getNumericCellColor(double value, double minVal, double maxVal) {
 
 CorrelationBarDelegate::ColorMapType toCorrelationBarColorMapType(HighPerfTableModel::ColorMapType type) {
     switch (type) {
+        case HighPerfTableModel::ColorMapType::BrBG:
+            return CorrelationBarDelegate::ColorMapType::BrBG;
+        case HighPerfTableModel::ColorMapType::BuPu:
+            return CorrelationBarDelegate::ColorMapType::BuPu;
+        case HighPerfTableModel::ColorMapType::GnBu:
+            return CorrelationBarDelegate::ColorMapType::GnBu;
+        case HighPerfTableModel::ColorMapType::Magma:
+            return CorrelationBarDelegate::ColorMapType::Magma;
+        case HighPerfTableModel::ColorMapType::PiYG:
+            return CorrelationBarDelegate::ColorMapType::PiYG;
+        case HighPerfTableModel::ColorMapType::Plasma:
+            return CorrelationBarDelegate::ColorMapType::Plasma;
+        case HighPerfTableModel::ColorMapType::PuOr:
+            return CorrelationBarDelegate::ColorMapType::PuOr;
+        case HighPerfTableModel::ColorMapType::Q_BlGrRd:
+            return CorrelationBarDelegate::ColorMapType::Q_BlGrRd;
+        case HighPerfTableModel::ColorMapType::Qualitative:
+            return CorrelationBarDelegate::ColorMapType::Qualitative;
+        case HighPerfTableModel::ColorMapType::RdBu:
+            return CorrelationBarDelegate::ColorMapType::RdBu;
+        case HighPerfTableModel::ColorMapType::RdPu:
+            return CorrelationBarDelegate::ColorMapType::RdPu;
+        case HighPerfTableModel::ColorMapType::RdYlBu:
+            return CorrelationBarDelegate::ColorMapType::RdYlBu;
+        case HighPerfTableModel::ColorMapType::RdYlGn:
+            return CorrelationBarDelegate::ColorMapType::RdYlGn;
+        case HighPerfTableModel::ColorMapType::Reds:
+            return CorrelationBarDelegate::ColorMapType::Reds;
+        case HighPerfTableModel::ColorMapType::Spectral:
+            return CorrelationBarDelegate::ColorMapType::Spectral;
         case HighPerfTableModel::ColorMapType::Viridis:
             return CorrelationBarDelegate::ColorMapType::Viridis;
+        case HighPerfTableModel::ColorMapType::YlGn:
+            return CorrelationBarDelegate::ColorMapType::YlGn;
+        case HighPerfTableModel::ColorMapType::YlGnBu:
+            return CorrelationBarDelegate::ColorMapType::YlGnBu;
+        case HighPerfTableModel::ColorMapType::YlOrBr:
+            return CorrelationBarDelegate::ColorMapType::YlOrBr;
         default:
             return CorrelationBarDelegate::ColorMapType::Viridis;
     }

@@ -30,20 +30,15 @@ void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem
                 : option.palette.color(QPalette::Base);
             painter->fillRect(option.rect, bgColor);
 
-            auto getContrastColor = [](const QColor& bg) -> QColor {
-                double luminance = (0.299 * bg.red() + 0.587 * bg.green() + 0.114 * bg.blue()) / 255.0;
-                return (luminance > 0.5) ? QColor(Qt::black) : QColor(Qt::white);
-            };
+            // Detect light or dark mode based on background color luminance
+            double bgLuminance = (0.299 * bgColor.red() + 0.587 * bgColor.green() + 0.114 * bgColor.blue()) / 255.0;
+            bool isDarkMode = (bgLuminance < 0.5);
 
-            // Set a constant color for all bars
-            QColor barColor = QColor(255, 140, 0); 
+            // Always use orange bars
+            QColor barColor = QColor(255, 140, 0);
 
-            // Optionally, keep contrast check for accessibility
-            if (!isColorContrastive(barColor, bgColor)) {
-                barColor = getContrastColor(bgColor);
-            }
-
-            QColor axisColor = getContrastColor(bgColor);
+            // Axis color: black in light mode, white in dark mode
+            QColor axisColor = isDarkMode ? QColor(Qt::white) : QColor(Qt::black);
 
             QPen axisPen(axisColor);
             axisPen.setWidth(2);

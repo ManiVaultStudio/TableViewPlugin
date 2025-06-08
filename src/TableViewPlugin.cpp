@@ -295,6 +295,10 @@ void TableViewPlugin::modifyandSetNewPointData()
 void TableViewPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 {
     const auto changedDataSet = dataEvent->getDataset();
+    if (!changedDataSet.isValid() || changedDataSet->getDataType() != PointType) {
+        qDebug() << "Received data event for an invalid or non-PointType dataset, ignoring.";
+        return;
+    }
     const auto datasetGuiName = changedDataSet->getGuiName();
 
     switch (dataEvent->getType()) {

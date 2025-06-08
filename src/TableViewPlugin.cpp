@@ -281,7 +281,7 @@ void TableViewPlugin::modifyandSetNewPointData()
         }
 
         FastTableData fastData = createTableFromDatasetData(
-            xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames);
+            xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames, clusterColorMap);
         _settingsAction.getTableViewAction()->setData(fastData);
 
         qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";

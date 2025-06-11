@@ -37,7 +37,7 @@ protected:
     DropWidget*             _dropWidget;
     mv::Dataset<Points>     _points;
     QString                 _currentDatasetName;
-    QLabel*                 _currentDatasetNameLabel;
+    //QLabel*                 _currentDatasetNameLabel;
     SettingsAction          _settingsAction;
 
 };

@@ -18,15 +18,15 @@ TableViewPlugin::TableViewPlugin(const PluginFactory* factory) :
     _dropWidget(nullptr),
     _points(),
     _currentDatasetName(),
-    _currentDatasetNameLabel(new QLabel()),
+    //_currentDatasetNameLabel(new QLabel()),
     _settingsAction(*this)
 {
-    _currentDatasetNameLabel->setAcceptDrops(true);
-    _currentDatasetNameLabel->setAlignment(Qt::AlignCenter);
+    //_currentDatasetNameLabel->setAcceptDrops(true);
+    //_currentDatasetNameLabel->setAlignment(Qt::AlignCenter);
 
-    _currentDatasetNameLabel->setMinimumHeight(40); 
-    _currentDatasetNameLabel->setWordWrap(true);
-    _currentDatasetNameLabel->setStyleSheet(
+    //_currentDatasetNameLabel->setMinimumHeight(40); 
+   // _currentDatasetNameLabel->setWordWrap(true);
+    /*_currentDatasetNameLabel->setStyleSheet(
         "QLabel {"
         "  border: 1.5px dashed #6c6cff;"
         "  background: #f5f7ff;"
@@ -39,38 +39,18 @@ TableViewPlugin::TableViewPlugin(const PluginFactory* factory) :
         "QLabel:disabled {"
         "  color: #aaa;"
         "}"
-    );
+    );*/
 
     getLearningCenterAction().addVideos(QStringList({ "Practitioner", "Developer" }));
 }
 
 void TableViewPlugin::init()
 {
-    auto layout = new QVBoxLayout();
-    layout->setContentsMargins(0, 0, 0, 0);
-    auto settings = new QHBoxLayout();
-    settings->setContentsMargins(0, 0, 0, 0);
-    settings->setSpacing(0);
-    settings->addWidget(_settingsAction.getDatasetOptionsHolder().createWidget(&getWidget()));
-    layout->addLayout(settings);
-    layout->addWidget(_settingsAction.getTableViewAction());
-    layout->addWidget(_currentDatasetNameLabel);
-    getWidget().setLayout(layout);
 
-    _dropWidget = new DropWidget(_currentDatasetNameLabel);
 
-    auto* dropIndicator = new DropWidget::DropIndicatorWidget(
-        &getWidget(), "No data loaded", "Drag an item from the data hierarchy and drop it here to visualize data...");
-    dropIndicator->setMinimumHeight(64);
-    dropIndicator->setStyleSheet(
-        "QWidget {"
-        "  padding: 14px 12px 20px 12px;"
-        "  font-size: 13px;"
-        "  color: #333;"
-        "  background: transparent;"
-        "}"
-    );
-    _dropWidget->setDropIndicatorWidget(dropIndicator);
+    _dropWidget = new DropWidget(_settingsAction.getTableViewAction());
+    _settingsAction.getTableViewAction()->setAcceptDrops(true);
+
 
     _dropWidget->initialize([this](const QMimeData* mimeData) -> DropWidget::DropRegions {
         DropWidget::DropRegions dropRegions;
@@ -117,7 +97,7 @@ void TableViewPlugin::init()
 
                         if (_points.isValid()) {
                             auto newDatasetName = _points->getGuiName();
-                            _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
+                            //_currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
                             _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
                         }
                        
@@ -132,7 +112,7 @@ void TableViewPlugin::init()
       
 
         auto newDatasetName = _points->getGuiName();
-        _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
+        //_currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
         _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
         //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentText("");
         //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentIndex(-1);
@@ -146,7 +126,7 @@ void TableViewPlugin::init()
 
         if(_points.isValid())
         { auto newDatasetName = _points->getGuiName();
-        _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
+        //_currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
         //_dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
 
         modifyandSetNewPointData();
@@ -179,6 +159,17 @@ void TableViewPlugin::init()
     _eventListener.registerDataEventByType(PointType, std::bind(&TableViewPlugin::onDataEvent, this, std::placeholders::_1));
 
     _settingsAction.getTableViewAction()->setBarDelegateForNumericalColumns(true);
+
+    auto layout = new QVBoxLayout();
+    layout->setContentsMargins(0, 0, 0, 0);
+    auto settings = new QHBoxLayout();
+    settings->setContentsMargins(0, 0, 0, 0);
+    settings->setSpacing(0);
+    settings->addWidget(_settingsAction.getDatasetOptionsHolder().createWidget(&getWidget()));
+    layout->addLayout(settings);
+    layout->addWidget(_settingsAction.getTableViewAction(),100);
+    //layout->addWidget(_currentDatasetNameLabel);
+    getWidget().setLayout(layout);
 }
 
 void TableViewPlugin::setShowBarsForNumericalColumns(bool enabled)
@@ -191,6 +182,7 @@ void TableViewPlugin::modifyandSetNewPointData()
 {
     qDebug() << "[modifyandSetPointData] _points.isValid():" << _points.isValid();
     if (_points.isValid()) {
+        _dropWidget->setShowDropIndicator(false);
         int numOfDims = _points->getNumDimensions();
         int numOfRows = _points->getNumPoints();
         std::vector<QString> columnNames = _points->getDimensionNames();
@@ -289,6 +281,7 @@ void TableViewPlugin::modifyandSetNewPointData()
     else {
         qDebug() << "[modifyandSetPointData] No valid points dataset, clearing table.";
         _settingsAction.getTableViewAction()->setData(FastTableData());
+        _dropWidget->setShowDropIndicator(true);
     }
 }
 

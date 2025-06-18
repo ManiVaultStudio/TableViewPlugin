@@ -327,6 +327,7 @@ void TableViewPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 
 TableViewPluginFactory::TableViewPluginFactory()
 {
+    setIconByName("table");
     getPluginMetadata().setDescription("Table view plugin");
     getPluginMetadata().setSummary("This table shows how to implement a basic view plugin in ManiVault Studio.");
     getPluginMetadata().setCopyrightHolder({ "BioVault (Biomedical Visual Analytics Unit LUMC - TU Delft)" });

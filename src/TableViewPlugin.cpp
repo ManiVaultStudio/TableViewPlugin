@@ -112,11 +112,7 @@ void TableViewPlugin::init()
       
 
         auto newDatasetName = _points->getGuiName();
-        //_currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
         _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
-        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentText("");
-        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentIndex(-1);
-        //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentDataset(_points);
 
  
     });
@@ -126,9 +122,7 @@ void TableViewPlugin::init()
 
         if(_points.isValid())
         { auto newDatasetName = _points->getGuiName();
-        //_currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
-        //_dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
-
+        _dropWidget->setShowDropIndicator(false);
         modifyandSetNewPointData();
 
         qDebug() << "[dataChanged] Exiting. _isUpdatingPoints reset to false.";

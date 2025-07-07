@@ -2,7 +2,7 @@
 #include "HighPerfTableView.h"
 #include "FastTableData.h"
 #include "TableDataUtils.h" 
-
+#include <QApplication>
 #include <event/Event.h>
 #include <DatasetsMimeData.h>
 #include <QDebug>
@@ -47,6 +47,7 @@ TableViewPlugin::TableViewPlugin(const PluginFactory* factory) :
 void TableViewPlugin::init()
 {
 
+    qApp->setStyleSheet("QToolTip { color: black; background: #ffffe1; border: 1px solid black; }");
 
     _dropWidget = new DropWidget(_settingsAction.getTableViewAction());
     _settingsAction.getTableViewAction()->setAcceptDrops(true);

@@ -77,7 +77,7 @@ void TableViewPlugin::init()
                 const auto description = QString("Load %1 into table view").arg(datasetGuiName);
 
                 if (_points.isValid() && candidateDataset.isValid() && _points == candidateDataset) {
-                    qDebug() << "[DropWidget] Same dataset detected, drop not allowed.";
+                    //qDebug() << "[DropWidget] Same dataset detected, drop not allowed.";
                     dropRegions << new DropWidget::DropRegion(
                         this,
                         "Drop not allowed",
@@ -90,7 +90,7 @@ void TableViewPlugin::init()
                     dropRegions << new DropWidget::DropRegion(this, "Points", description, "map-marker-alt", true, [this, candidateDataset]() {
                         
                         _points = candidateDataset;
-                        qDebug() << "[DropWidget] _points.isValid() after assignment:" << _points.isValid();
+                        //qDebug() << "[DropWidget] _points.isValid() after assignment:" << _points.isValid();
                         //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentText("");
                         //_settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentIndex(-1);
                         _settingsAction.getDatasetOptionsHolder().getPointDatasetAction().setCurrentDataset(_points);
@@ -126,7 +126,7 @@ void TableViewPlugin::init()
         _dropWidget->setShowDropIndicator(false);
         modifyandSetNewPointData();
 
-        qDebug() << "[dataChanged] Exiting. _isUpdatingPoints reset to false.";
+        //qDebug() << "[dataChanged] Exiting. _isUpdatingPoints reset to false.";
         }
     });
 
@@ -137,12 +137,12 @@ void TableViewPlugin::init()
         {
             _points = _settingsAction.getDatasetOptionsHolder().getPointDatasetAction().getCurrentDataset();
             mv::events().notifyDatasetDataChanged(_points);
-            qDebug() << "[currentIndexChanged] _points set to valid dataset.";
+            //qDebug() << "[currentIndexChanged] _points set to valid dataset.";
         }
         else
         {
             _points = Dataset<Points>();
-            qDebug() << "[currentIndexChanged] _points set to invalid dataset.";
+            //qDebug() << "[currentIndexChanged] _points set to invalid dataset.";
         }
 
     });
@@ -175,7 +175,7 @@ void TableViewPlugin::setShowBarsForNumericalColumns(bool enabled)
 
 void TableViewPlugin::modifyandSetNewPointData()
 {
-    qDebug() << "[modifyandSetPointData] _points.isValid():" << _points.isValid();
+    //qDebug() << "[modifyandSetPointData] _points.isValid():" << _points.isValid();
     if (_points.isValid()) {
         _dropWidget->setShowDropIndicator(false);
         int numOfDims = _points->getNumDimensions();
@@ -234,7 +234,7 @@ void TableViewPlugin::modifyandSetNewPointData()
         for (const Dataset<Points>& child : children)
         {
             if (child->getDataType() == PointType) {
-                qDebug() << "[modifyandSetPointData] Found child dataset of type PointType:" << child->getGuiName();
+                //qDebug() << "[modifyandSetPointData] Found child dataset of type PointType:" << child->getGuiName();
                 auto childColumnNames = child->getDimensionNames();
                 int childNumOfDims = child->getNumDimensions();
                 int childNumOfRows = child->getNumPoints();
@@ -271,10 +271,10 @@ void TableViewPlugin::modifyandSetNewPointData()
             xData, numOfRows, columnNames, clusterDatasetRows, clusterColumnNames, clusterColorMap);
         _settingsAction.getTableViewAction()->setData(fastData);
 
-        qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
+        //qDebug() << "[modifyandSetPointData] Table data set with" << numOfRows << "rows and" << numOfDims << "columns.";
     }
     else {
-        qDebug() << "[modifyandSetPointData] No valid points dataset, clearing table.";
+        //qDebug() << "[modifyandSetPointData] No valid points dataset, clearing table.";
         _settingsAction.getTableViewAction()->setData(FastTableData());
         _dropWidget->setShowDropIndicator(true);
     }
@@ -284,7 +284,7 @@ void TableViewPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 {
     const auto changedDataSet = dataEvent->getDataset();
     if (!changedDataSet.isValid() || changedDataSet->getDataType() != PointType) {
-        qDebug() << "Received data event for an invalid or non-PointType dataset, ignoring.";
+        //qDebug() << "Received data event for an invalid or non-PointType dataset, ignoring.";
         return;
     }
     const auto datasetGuiName = changedDataSet->getGuiName();
@@ -293,26 +293,26 @@ void TableViewPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
         case EventType::DatasetAdded:
         {
             const auto dataAddedEvent = static_cast<DatasetAddedEvent*>(dataEvent);
-            qDebug() << datasetGuiName << "was added";
+            //qDebug() << datasetGuiName << "was added";
             break;
         }
         case EventType::DatasetDataChanged:
         {
             const auto dataChangedEvent = static_cast<DatasetDataChangedEvent*>(dataEvent);
-            qDebug() << datasetGuiName << "data changed";
+            //qDebug() << datasetGuiName << "data changed";
             break;
         }
         case EventType::DatasetRemoved:
         {
             const auto dataRemovedEvent = static_cast<DatasetRemovedEvent*>(dataEvent);
-            qDebug() << datasetGuiName << "was removed";
+            //qDebug() << datasetGuiName << "was removed";
             break;
         }
         case EventType::DatasetDataSelectionChanged:
         {
             const auto dataSelectionChangedEvent = static_cast<DatasetDataSelectionChangedEvent*>(dataEvent);
             const auto& selectionSet = changedDataSet->getSelection<Points>();
-            qDebug() << datasetGuiName << "selection has changed";
+            //qDebug() << datasetGuiName << "selection has changed";
             break;
         }
         default:
